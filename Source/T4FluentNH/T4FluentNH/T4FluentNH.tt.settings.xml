@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Settings>
+  <BaseEntity>T4FluentNH.Tests.IEntity</BaseEntity>
+  <Strict>True</Strict>
+  <DefaultCollectionMapType>Set</DefaultCollectionMapType>
+  <KeyColumn>
+    <Prefix></Prefix>
+    <Postfix>Id</Postfix>
+  </KeyColumn>
+  <PropertyRef>
+    <Prefix></Prefix>
+    <Postfix>Id</Postfix>
+  </PropertyRef>
+</Settings>

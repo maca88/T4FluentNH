@@ -1,0 +1,911 @@
+﻿<#@ include file="Imports.ttinclude"#>
+<#@ include file="Utils.ttinclude"#>
+<#@ include file="Header.ttinclude"#>
+<#@ include file="VsHelperInit.ttinclude"#>
+<#
+//System.Diagnostics.Debugger.Launch();
+//System.Diagnostics.Debugger.Break();	
+var domainClasses = new Dictionary<string, DomainModelWrapper>();
+var domainOverrides = new Dictionary<string, Dictionary<string, ModelRelation>>();//Dict<typeFullName, Dict<propName, Relation>>
+var domainComponents = new Dictionary<string, Dictionary<string, CodeProperty2>>();//Dict<typeFullName, PropName, PropTypefullName>
+var projectItems = VSHelper.GetAllProjectItems();
+var pTypes = VSHelper.GetAllTypes(projectItems);
+var generatedFiles = new Dictionary<string, string>();
+var domainOverrideFiles = new Dictionary<string, string>();
+var settings = XmlSettings.Load(VSHelper.Host.TemplateFile + ".settings.xml");
+
+//Get and save all overrides
+VSHelper.ProcessFiles(projectItems, (file, name) => VSHelper.ProcessTypes(file, (type, pItem) => 
+    {
+		if(VSHelper.GetAttribute(type.Attributes, "System.CodeDom.Compiler.GeneratedCodeAttribute") != null)
+		{
+			generatedFiles.Add(type.FullName, pItem.FileNames[0]);
+			return;
+		}
+        var mapOverride =
+            type.ImplementedInterfaces.OfType<CodeElement>()
+                .FirstOrDefault(o => o.FullName.Contains("IAutoMappingOverride"));
+
+		if(mapOverride == null) return;
+		var overrideType = VSHelper.GetGenericAgruments(mapOverride.FullName)[0];
+		if(overrideType == null) return;
+		if(!domainOverrides.ContainsKey(overrideType))
+			domainOverrides.Add(overrideType, new Dictionary<string, ModelRelation>());
+
+		//VSHelper.Warning("Overrides found for type " + overrideType);
+
+		domainOverrideFiles.Add(overrideType, pItem.FileNames[0]);
+
+		//Get properties for overriden type
+		var properties = new Dictionary<string, CodeProperty2>();
+		foreach(var partialType in pTypes[overrideType])
+        {
+			foreach(var p in VSHelper.GetProperties(partialType))
+				properties.Add(p.Name, p);
+        }
+
+		//get override method
+		var method = VSHelper.GetMethod(type, "Override");
+		if(method == null) return;
+		var functionText = VSHelper.GetCodeFunctionText(method);
+		
+        //Components
+        var compRegex = new Regex(@"\.Component\([\w\s]+=>[\s\w]+\.([\w\d]+)");
+        var compMatches = compRegex.Matches(functionText);
+        foreach (var match in compMatches.OfType<Match>().Where(o => o.Success))
+        {
+            var propName = match.Groups[1].Value;
+            if(!properties.ContainsKey(propName)) continue;
+            var prop = properties[propName];
+            if(prop == null) throw new Exception("prop null");
+            if(!domainComponents.ContainsKey(overrideType))
+                domainComponents.Add(overrideType, new Dictionary<string, CodeProperty2>());
+            domainComponents[overrideType].Add(propName, prop);
+        }
+
+        //oneToMany relation
+		var oneToManyRegex = new Regex(@"\.HasMany\([\w\s]+=>[\s\w]+\.([\w\d]+)\)([^;]*)");
+		var oneToManyMatches = oneToManyRegex.Matches(functionText);
+		foreach(var match in oneToManyMatches.OfType<Match>().Where(o => o.Success))
+        {
+			var propName = match.Groups[1].Value;
+			var extraCalls = match.Groups[2].Value;
+            if(!properties.ContainsKey(propName)) continue;
+            var prop = properties[propName];
+            if(prop == null) throw new Exception("prop null");
+			var relatedPropType = VSHelper.GetGenericAgruments(prop.Type).First();
+			if(relatedPropType == null) throw new Exception("relatedPropType null");
+
+            //KeyColumn - support KeyColumn(o => o.Category) or KeyColumn("CategoryId")
+            var keyColumnRegex = new Regex(@"\.KeyColumn\([\w\s]+=>[\s\w]+\.([\w\d]+)\)|\.KeyColumn\(""([\w\d]+)""\)");
+		    var keyColumnMatches = keyColumnRegex.Matches(extraCalls);
+            var relatedPropName = "";
+            foreach (var keyColumnMatch in keyColumnMatches.OfType<Match>().Where(o => o.Success))
+            {
+                relatedPropName = !string.IsNullOrEmpty(keyColumnMatch.Groups[1].Value)
+                    ? keyColumnMatch.Groups[1].Value
+                    : VSHelper.Trim(keyColumnMatch.Groups[2].Value, settings.KeyColumnPrefix, settings.KeyColumnPostfix);
+            }
+            if (string.IsNullOrEmpty(relatedPropName)) continue;
+            var relatedProp = VSHelper.GetProperties(pTypes[relatedPropType]).First(o => o.Name == relatedPropName);
+
+            //CollectionType - support AsBag(), AsList(), AsSet
+            var collTypeRegex = new Regex(@"\.(AsList|AsSet|AsBag)");
+            var collTypeMatches = collTypeRegex.Matches(extraCalls);
+            var colType = CollectionMapType.Unknown;
+            foreach (var collTypeMatch in collTypeMatches.OfType<Match>().Where(o => o.Success))
+            {
+                var cType = collTypeMatch.Groups[1].Value;
+                switch(cType)
+                {
+                    case "AsSet":
+                        colType = CollectionMapType.Set;
+                        break;
+                    case "AsList":
+                        colType = CollectionMapType.List;
+                        break;
+                    case "AsBag":
+                        colType = CollectionMapType.Bag;
+                        break;
+                }
+            }
+
+            //Add oneToMany
+			domainOverrides[overrideType].Add(propName,
+				new ModelRelation
+						{
+							Type = ModelRelationType.OneToMany,
+							RelatedModelType = relatedPropType,
+							ListType = VSHelper.GetPropertyType(prop),
+                            CollectionMapType = colType,
+							Property = prop, //many
+							PathInRelatedModel = relatedPropName //one
+						});
+			//Add manyToOne
+			if(!domainOverrides.ContainsKey(relatedPropType))
+				domainOverrides.Add(relatedPropType, new Dictionary<string, ModelRelation>());
+
+			domainOverrides[relatedPropType].Add(relatedPropName,
+				new ModelRelation
+						{
+							Type = ModelRelationType.ManyToOne,
+							RelatedModelType = overrideType,
+							ListType = null,
+							Property = relatedProp,
+							PathInRelatedModel = propName 
+						});
+        }
+
+		//oneToOne relation
+		var oneToOneRegex = new Regex(@"\.HasOne\([\w\s]+=>[\s\w]+\.([\w\d]+)\)([^;]*)");
+		var oneToOneMatches = oneToOneRegex.Matches(functionText);
+		foreach(var match in oneToOneMatches.OfType<Match>().Where(o => o.Success))
+        {
+			var propName = match.Groups[1].Value;
+			var extraCalls = match.Groups[2].Value;
+			var prop = properties[propName];
+			if(prop == null) throw new Exception("prop null");
+			var relatedPropType = prop.Type.CodeType.FullName;
+
+            //PropertyRef - support PropertyRef(o => o.Category) or PropertyRef("CategoryId")
+            var propRefRegex = new Regex(@"\.PropertyRef\([\w\s]+=>[\s\w]+\.([\w\d]+)\)|\.PropertyRef\(""([\w\d]+)""\)");
+		    var propRefMatches = propRefRegex.Matches(extraCalls);
+            var relatedPropName = "";
+            foreach (var keyColumnMatch in propRefMatches.OfType<Match>().Where(o => o.Success))
+            {
+                relatedPropName = !string.IsNullOrEmpty(keyColumnMatch.Groups[1].Value)
+                    ? keyColumnMatch.Groups[1].Value
+                    : VSHelper.Trim(keyColumnMatch.Groups[2].Value, settings.PropertyRefPrefix, settings.PropertyRefPostfix);
+            }
+            if (string.IsNullOrEmpty(relatedPropName)) continue;
+            var relatedProp = VSHelper.GetProperties(pTypes[relatedPropType]).First(o => o.Name == relatedPropName);
+
+			//Add oneToOne
+			domainOverrides[overrideType].Add(propName,
+				new ModelRelation
+						{
+							Type = ModelRelationType.OneToOne,
+							RelatedModelType = relatedPropType,
+							ListType = null,
+							Property = prop, 
+							PathInRelatedModel = relatedPropName 
+						});
+			//Add one to one
+			if(!domainOverrides.ContainsKey(relatedPropType))
+				domainOverrides.Add(relatedPropType, new Dictionary<string, ModelRelation>());
+
+			if(!domainOverrides[relatedPropType].ContainsKey(relatedPropName)) //if is not self related
+            {
+				domainOverrides[relatedPropType].Add(relatedPropName,
+				new ModelRelation
+						{
+							Type = ModelRelationType.OneToOne,
+							RelatedModelType = overrideType,
+							ListType = null,
+							Property = relatedProp, 
+							PathInRelatedModel = propName
+						});
+            }
+        }
+
+		//manyToMany relation
+		var manyToManyRegex = new Regex(@"\.HasManyToMany\([\w\s]+=>[\s\w]+\.([\w\d]+)\)");
+		var manyToManyMatches = manyToManyRegex.Matches(functionText);
+		foreach(Match match in manyToManyMatches)
+        {
+			if (!match.Success) continue;
+			var propName = match.Groups[1].Value;
+			var prop = properties[propName];
+			if(prop == null) throw new Exception("prop null");
+			var relatedPropType = VSHelper.GetGenericAgruments(prop.Type).First();
+
+			foreach(var relPartialType in pTypes[relatedPropType])
+            {
+				foreach(var relTypeProp in VSHelper.GetProperties(relPartialType))
+				{
+					//VSHelper.Warning(type.FullName + " - " +overrideType + " - " + relTypeProp.Name +" - "+ VSHelper.GetGenericAgruments(relTypeProp.Type).FirstOrDefault());
+					if(
+						VSHelper.IsNHibernateProperty(relTypeProp) &&
+						VSHelper.IsGeneric(relTypeProp.Type) &&
+						VSHelper.GetGenericAgruments(relTypeProp.Type).FirstOrDefault() == overrideType &&
+						!domainOverrides[overrideType].ContainsKey(propName))
+                    {
+						//add manyToMany
+						domainOverrides[overrideType].Add(propName,
+							new ModelRelation
+									{
+										Type = ModelRelationType.ManyToMany,
+										RelatedModelType = relatedPropType,
+										ListType = VSHelper.GetPropertyType(prop),
+										Property = prop, 
+										PathInRelatedModel = relTypeProp.Name 
+									});
+                    }	
+				}
+            }
+
+			
+        }
+	}));
+
+var manager = Manager.Create(Host, GenerationEnvironment);
+
+VSHelper.ProcessFiles(projectItems, (file, name) => 
+	VSHelper.ProcessTypes(file, (type, pItem) => 
+		{
+			if(VSHelper.GetAttribute(type.Attributes, "System.CodeDom.Compiler.GeneratedCodeAttribute") != null) return;
+			//VSHelper.GetAllCodeElementsOfType(type.)
+			if(!type.get_IsDerivedFrom(settings.BaseEntity)) return;
+			//VSHelper.Warning(pItem.get_FileNames(0) + " gener created: " + (generatedFiles.ContainsKey(type.FullName) ?  File.GetCreationTime(generatedFiles[type.FullName]).ToString() : "WTF") + " gener modif: " + (generatedFiles.ContainsKey(type.FullName) ?  File.GetLastWriteTime(generatedFiles[type.FullName]).ToString() : "WTF") + " real: " + File.GetLastWriteTime(pItem.get_FileNames(0)));
+			var domainModelModified = true;
+
+			/*
+			if(generatedFiles.ContainsKey(type.FullName) && File.GetLastWriteTime(generatedFiles[type.FullName]) >= File.GetLastWriteTime(pItem.get_FileNames(0))) //if there were no changes on domain model
+			{
+				if(
+					!domainOverrideFiles.ContainsKey(type.FullName) || 
+					(
+						domainOverrideFiles.ContainsKey(type.FullName) && File.GetLastWriteTime(generatedFiles[type.FullName]) >= File.GetLastWriteTime(domainOverrideFiles[type.FullName])
+					)) //if override mapping for domain model was changed
+                {
+					VSHelper.Warning(string.Format("No changes made on type '{0}'", type.FullName));
+					manager.KeepGeneratedFile(generatedFiles[type.FullName]);
+					return;
+                }
+				domainModelModified = false;
+			}*/
+
+			if(!domainClasses.ContainsKey(type.FullName))
+				domainClasses.Add(type.FullName, new DomainModelWrapper(type, pTypes, domainOverrides, VSHelper, domainModelModified, pItem, settings, domainComponents));
+			else
+				domainClasses[type.FullName].Merge(new DomainModelWrapper(type, pTypes, domainOverrides, VSHelper, domainModelModified, pItem, settings, domainComponents));
+			//Warning(string.Format("Processing type: '{0}' with parameter WasModified = {1}", type.FullName, domainModelModified));
+		}));
+
+manager.StartHeader(); 
+#>
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.CodeDom.Compiler;
+using System.Linq.Expressions;
+using System.Reflection;
+using FluentNHibernate.Automapping;
+
+<#
+manager.EndBlock(); 
+
+foreach(var type in domainClasses.Values)
+{
+	manager.StartNewFile(string.Format("{0}.generated.cs", type.Name)); 
+#>
+namespace <#=type.Namespace.FullName#>
+{
+	[GeneratedCode("T4Template", "1.0")]
+	public partial class <#=type.Name#>
+	{
+
+<#
+    if (domainComponents.ContainsKey(type.FullName))
+    {
+#>
+        #region Components fileds
+<#
+        foreach (var comp in domainComponents[type.FullName])
+        {
+#>
+        private <#=comp.Value.Type.AsFullName#> <#=VSHelper.GetFieldName(comp.Key)#>;
+<#
+        }
+#>
+        #endregion
+<#
+    }
+#>
+    
+
+<#
+	foreach(var relation in type.RelatedModels)
+	{
+		var relatedType = domainClasses[relation.RelatedModelType];
+		var paramName = relation.Type == ModelRelationType.OneToMany || relation.Type == ModelRelationType.ManyToMany
+			? VSHelper.Pluralize(VSHelper.FirstCharToLower(relation.Property.Name))
+			: VSHelper.Singularize(VSHelper.FirstCharToLower(relation.Property.Name));
+		var propName = relation.Property.Name;
+		var fieldName = VSHelper.GetFieldName(propName);
+#>
+		#region <#=propName#>
+
+<#
+		switch(relation.Type)
+        {
+			case ModelRelationType.OneToMany:
+#>
+		private <#=VSHelper.GetValidNHibernteEnumerableInterface(relation.Property, relation.ListType, settings.Strict)#> <#=fieldName#>;
+
+        public virtual void Add<#=VSHelper.Singularize(propName)#>(<#=relatedType.Name#> <#=paramName#>)
+        {
+            this.AddOneToMany(o => o.<#=propName#>, <#=paramName#>, o => o.<#=relation.PathInRelatedModel#>, o=> o.Remove<#=VSHelper.Singularize(propName)#>);
+        }
+
+        public virtual void Remove<#=VSHelper.Singularize(propName)#>(<#=relatedType.Name#> <#=paramName#>)
+        {
+            this.RemoveOneToMany(o => o.<#=propName#>, <#=paramName#>, o => o.<#=relation.PathInRelatedModel#>);
+        }
+<#
+				break;
+			case ModelRelationType.ManyToMany:
+#>
+		private <#=relation.ListType#> <#=fieldName#>;
+
+        public virtual void Add<#=VSHelper.Singularize(propName)#>(<#=relatedType.Name#> <#=paramName#>)
+        {
+            this.AddManyToMany(o => o.<#=propName#>, <#=paramName#>, o => o.<#=relation.PathInRelatedModel#>);
+        }
+
+        public virtual void Remove<#=VSHelper.Singularize(propName)#>(<#=relatedType.Name#> <#=paramName#>)
+        {
+            this.RemoveManyToMany(o => o.<#=propName#>, <#=paramName#>, o => o.<#=relation.PathInRelatedModel#>);
+        }
+<#				break;
+			case ModelRelationType.ManyToOne:
+#>
+
+        public virtual void Set<#=propName#>(<#=relatedType.Name#> <#=paramName#>)
+        {
+            this.SetManyToOne(o => o.<#=propName#>, <#=paramName#>, o => o.Remove<#=VSHelper.Singularize(relation.PathInRelatedModel)#>, o => o.<#=relation.PathInRelatedModel#>);
+        }
+
+        public virtual void Unset<#=propName#>()
+        {
+            this.UnsetManyToOne(o => o.<#=propName#>, o => o.<#=relation.PathInRelatedModel#>);
+        }
+<#
+				break;
+			case ModelRelationType.OneToOne:
+#>
+		public virtual void Set<#=propName#>(<#=relatedType.Name#> <#=paramName#>)
+        {
+            this.SetOneToOne(o => o.<#=propName#>, <#=paramName#>, o => o.<#=relation.PathInRelatedModel#>);
+        }
+
+        public virtual void Unset<#=propName#>()
+        {
+            this.UnsetOneToOne(o => o.<#=propName#>, o => o.<#=relation.PathInRelatedModel#>);
+        }	
+<#
+				break;
+        }
+#>
+
+		#endregion
+
+<#
+	}
+#>
+	}
+}
+<#
+	manager.EndBlock();
+}
+manager.Process(true); 
+#>
+
+namespace FluentNHibernate.Automapping
+{
+    internal static class EntityExtensions
+    {
+        private static void AddIfNotExist<T>(ICollection<T> collection, T item)
+        {
+            if (!collection.Contains(item))
+                collection.Add(item);
+        }
+
+        private static void RemoveIfExist<T>(ICollection<T> collection, T item)
+        {
+            if (collection.Contains(item))
+                collection.Remove(item);
+        }
+
+        public static PropertyInfo GetPropertyInfo<TSource, TProperty>(TSource source, Expression<Func<TSource, TProperty>> propertyLambda)
+        {
+            var type = typeof(TSource);
+
+            var member = propertyLambda.Body as MemberExpression;
+            if (member == null)
+                throw new ArgumentException(string.Format(
+                    "Expression '{0}' refers to a method, not a property.",
+                    propertyLambda));
+
+            var propInfo = member.Member as PropertyInfo;
+            if (propInfo == null)
+                throw new ArgumentException(string.Format(
+                    "Expression '{0}' refers to a field, not a property.",
+                    propertyLambda.ToString()));
+
+            if (type != propInfo.ReflectedType &&
+                !type.IsSubclassOf(propInfo.ReflectedType))
+                throw new ArgumentException(string.Format(
+                    "Expresion '{0}' refers to a property that is not from type {1}.",
+                    propertyLambda.ToString(),
+                    type));
+
+            return propInfo;
+        }
+
+        public static void AddOneToMany<TOne, TMany>(this TOne one,
+            Expression<Func<TOne, IEnumerable<TMany>>> manyListExpr, TMany many,
+            Expression<Func<TMany, TOne>> oneExpr,
+            Expression<Func<TOne, Action<TMany>>> removeManyExpr)
+            where TOne : class, <#=settings.BaseEntity#>
+            where TMany : class, <#=settings.BaseEntity#>
+        {
+            var enumerable = manyListExpr.Compile()(one);
+            var collection = (ICollection<TMany>)enumerable;
+            var itemOwner = oneExpr.Compile()(many);
+            var entityOwnerPropInfo = GetPropertyInfo(many, oneExpr);
+
+            if (collection.Contains(many)) return;
+            if (itemOwner != null)
+                removeManyExpr.Compile()(itemOwner)(many);
+            entityOwnerPropInfo.SetValue(many, one);
+            collection.Add(many);
+
+            /*
+            if (Locations.Contains(location)) return;
+            if (location.User != null)
+                location.User.RemoveLocation(location);
+            location.User = this;
+            Locations.Add(location);*/
+
+
+        }
+
+        public static void RemoveOneToMany<TOne, TMany>(this TOne one,
+            Expression<Func<TOne, IEnumerable<TMany>>> manyListExpr, TMany many,
+            Expression<Func<TMany, TOne>> entityExpr
+            )
+            where TOne : class, <#=settings.BaseEntity#>
+            where TMany : class, <#=settings.BaseEntity#>
+        {
+            var enumerable = manyListExpr.Compile()(one);
+            var collection = (ICollection<TMany>)enumerable;
+            var entityOwnerPropInfo = GetPropertyInfo(many, entityExpr);
+
+            if (!collection.Contains(many)) return;
+            collection.Remove(many);
+            entityOwnerPropInfo.SetValue(many, null);
+
+            /*
+            if (!Locations.Contains(location)) return;
+            Locations.Remove(location);
+            location.User = null;*/
+        }
+
+        public static void SetManyToOne<TMany, TOne>(this TMany many,
+            Expression<Func<TMany, TOne>> oneExpr, TOne newOne,
+            Expression<Func<TOne, Action<TMany>>> removeManyExpr,
+            Expression<Func<TOne, IEnumerable<TMany>>> manyExp)
+            where TOne : class, <#=settings.BaseEntity#>
+            where TMany : class, <#=settings.BaseEntity#>
+        {
+            var one = oneExpr.Compile()(many);
+            var onePropInfo = GetPropertyInfo(many, oneExpr);
+            var manyList = (ICollection<TMany>)manyExp.Compile()(newOne);
+
+            if (Equals(one, newOne)) return;
+            if (one != null)
+                removeManyExpr.Compile()(one)(many);
+            onePropInfo.SetValue(many, newOne);
+            AddIfNotExist(manyList, many);
+            /*
+            if (User == user) return;
+            if(User != null)
+                User.RemoveLocation(this);
+            User = user;
+            AddIfNotExist(user.Locations, this);*/
+        }
+
+        public static void UnsetManyToOne<TMany, TOne>(this TMany many,
+            Expression<Func<TMany, TOne>> oneExpr,
+            Expression<Func<TOne, IEnumerable<TMany>>> manyListExpr)
+            where TOne : class, <#=settings.BaseEntity#>
+            where TMany : class, <#=settings.BaseEntity#>
+        {
+            var one = oneExpr.Compile()(many);
+            var onePropInfo = GetPropertyInfo(many, oneExpr);
+            var manyList = (ICollection<TMany>)manyListExpr.Compile()(one);
+
+            if (one == null) return;
+            RemoveIfExist(manyList, many);
+            onePropInfo.SetValue(many, null);
+            /*
+            if(User == null) return;
+            RemoveIfExist(User.Locations, this);
+            User = null;*/
+        }
+
+        public static void AddManyToMany<TMany, TMany2>(this TMany many,
+            Expression<Func<TMany, IEnumerable<TMany2>>> many2ListExpr, TMany2 many2,
+            Expression<Func<TMany2, IEnumerable<TMany>>> manyListExpr)
+            where TMany : class, <#=settings.BaseEntity#>
+            where TMany2 : class, <#=settings.BaseEntity#>
+        {
+            var many2List = (ICollection<TMany2>)many2ListExpr.Compile()(many);
+            var manyList = (ICollection<TMany>)manyListExpr.Compile()(many2);
+
+            AddIfNotExist(manyList, many);
+            AddIfNotExist(many2List, many2);
+            /*
+            camera.Locations.AddIfNotExist(this);
+            Cameras.AddIfNotExist(camera);*/
+        }
+
+        public static void RemoveManyToMany<TMany, TMany2>(this TMany many,
+            Expression<Func<TMany, IEnumerable<TMany2>>> many2ListExpr, TMany2 many2,
+            Expression<Func<TMany2, IEnumerable<TMany>>> manyListExpr)
+            where TMany : class, <#=settings.BaseEntity#>
+            where TMany2 : class, <#=settings.BaseEntity#>
+        {
+            var many2List = (ICollection<TMany2>)many2ListExpr.Compile()(many);
+            var manyList = (ICollection<TMany>)manyListExpr.Compile()(many2);
+
+            RemoveIfExist(manyList, many);
+            RemoveIfExist(many2List, many2);
+            /*
+            RemoveIfExist(camera.Locations, this);
+            RemoveIfExist(Cameras, camera);*/
+        }
+
+        public static void SetOneToOne<TOne, TOne2>(this TOne one,
+            Expression<Func<TOne, TOne2>> one2Expr, TOne2 one2,
+            Expression<Func<TOne2, TOne>> oneExpr)
+            where TOne : class, <#=settings.BaseEntity#>
+            where TOne2 : class, <#=settings.BaseEntity#>
+        {
+            var oneInOne2 = oneExpr.Compile()(one2);
+            var oneInOne2PropInfo = GetPropertyInfo(one2, oneExpr);
+            var currentOne2 = one2Expr.Compile()(one);
+            var currentOne2PropInfo = GetPropertyInfo(one, one2Expr);
+
+            if (oneInOne2 != null)
+                oneInOne2.UnsetOneToOne(one2Expr, oneExpr);
+            oneInOne2PropInfo.SetValue(one2, one);
+            if (currentOne2 != null)
+                currentOne2.UnsetOneToOne(oneExpr, one2Expr);
+            currentOne2PropInfo.SetValue(one, one2);
+
+            /*
+             merryWith.MerriedWith = this;
+             MerriedWith = merryWith;
+             */
+
+
+        }
+
+        public static void UnsetOneToOne<TOne, TOne2>(this TOne one,
+            Expression<Func<TOne, TOne2>> one2Expr,
+            Expression<Func<TOne2, TOne>> oneExpr)
+            where TOne : class, <#=settings.BaseEntity#>
+            where TOne2 : class, <#=settings.BaseEntity#>
+        {
+            var one2 = one2Expr.Compile()(one);
+            var one2PropInfo = GetPropertyInfo(one, one2Expr);
+            var oneInOne2PropInfo = GetPropertyInfo(one2, oneExpr);
+
+            if (one2 == null) return;
+            oneInOne2PropInfo.SetValue(one2, null);
+            one2PropInfo.SetValue(one, null);
+            /*
+            if (Dispozicija == null) return;
+            Dispozicija.DispozicijaRow = null;
+            Dispozicija = null;*/
+        }  
+    }
+}
+
+<#+
+public enum ModelRelationType
+{
+	None,
+	OneToOne,
+	OneToMany,
+	ManyToOne,
+	ManyToMany
+}
+
+public enum CollectionMapType
+{
+    Unknown = 0,
+    Set,
+    Bag,
+    List
+}
+
+public class ModelRelation
+{
+	public ModelRelationType Type { get; set; }
+
+	public string RelatedModelType { get; set; }
+
+	//Only set when the related model is in a collection
+	public string ListType { get; set; }
+
+    public CollectionMapType CollectionMapType { get; set; }
+
+    public CodeProperty2 Property { get; set; }
+
+	//public string PropertyName { get; set; }
+
+	public string PathInRelatedModel { get; set; }
+}
+
+
+public class DomainModelWrapper
+{
+	private readonly CodeClass2 _domainModel;
+
+	public DomainModelWrapper(CodeClass2 domainModel, Dictionary<string, List<CodeClass2>> pTypes, 
+		Dictionary<string, Dictionary<string, ModelRelation>> overrides, VisualStudioHelper vsHelper, bool wasModified, ProjectItem pItem, XmlSettings settings, 
+        Dictionary<string, Dictionary<string, CodeProperty2>> domainComponents)
+    {
+		VSHelper = vsHelper;
+		ProjectItem = pItem;
+		WasModified = wasModified;
+	    Settings = settings;
+		ProjectTypes = pTypes;
+		Overrides = overrides;
+		_domainModel = domainModel;
+		MappedProperties = new Dictionary<string, CodeProperty2>();
+		RelatedModels = new List<ModelRelation>();
+	    Components = domainComponents;
+		Initialize();
+    }
+
+	public Dictionary<string, Dictionary<string, ModelRelation>> Overrides { get; set; }
+
+	public VisualStudioHelper VSHelper { get; set; }
+
+	public Dictionary<string, List<CodeClass2>> ProjectTypes { get; set; }
+
+	public string Name { get{ return _domainModel.Name; } }
+
+	public ProjectItem ProjectItem { get; set; }
+
+    public XmlSettings Settings { get; set; }
+
+	public bool WasModified { get; set; }
+
+	public CodeNamespace Namespace { get{ return _domainModel.Namespace; } }
+
+	public string FullName { get{ return _domainModel.FullName; } }
+
+	public Dictionary<string, CodeProperty2> MappedProperties { get; set; }
+
+    public Dictionary<string, Dictionary<string, CodeProperty2>> Components { get; set; }
+
+	public List<ModelRelation> RelatedModels { get; set; }
+
+	public void Merge(DomainModelWrapper wrapper)
+    {
+		if(wrapper.FullName != wrapper.FullName)
+			throw new Exception("Cannot merge two ModelWrappers with different types");
+		foreach(var pair in wrapper.MappedProperties)
+        {
+			if(MappedProperties.ContainsKey(pair.Key))
+            {
+				VSHelper.Warning(string.Format("Cannot add an existing property! Entity {0}, duplicate property {1}", FullName, pair.Key));
+				continue;
+            }
+			MappedProperties.Add(pair.Key, pair.Value);
+        }
+		foreach(var relation in wrapper.RelatedModels)
+        {
+			if(RelatedModels.Contains(relation)) //TODO: fix this
+            {
+				VSHelper.Warning(string.Format("Cannot add an existing relation! Entity {0}, duplicate relation {1}", FullName, relation.RelatedModelType));
+				continue;
+            }
+			RelatedModels.Add(relation);
+        }
+    }
+
+
+	private void Initialize()
+    {
+		VSHelper.SetAsPartial(_domainModel);
+		//Editing properties 
+		//VSHelper.Warning(_domainModel.FullName + " "+  VSHelper.GetProperties(_domainModel).Count().ToString());
+		//VSHelper.Warning(_domainModel.FullName + " "+  string.Join(",", _domainModel.get_DerivedTypes()));
+		foreach(CodeProperty2 prop in VSHelper.GetProperties(_domainModel))
+		{
+			VSHelper.SetAsVirtual(prop);
+
+			if(VSHelper.IsNHibernateProperty(prop))
+			{
+				MappedProperties.Add(prop.Name, prop);
+				if(WasModified)
+					EditMappedProperty(prop);
+            }
+				
+		}
+		foreach(var method in VSHelper.GetMethods(_domainModel))
+        {
+            if(method.Access != vsCMAccess.vsCMAccessPrivate)
+			    method.OverrideKind = vsCMOverrideKind.vsCMOverrideKindVirtual;
+        }
+
+		ProjectItem.Save();
+    }
+
+	private ModelRelation GetRelation(CodeProperty2 prop, string typeFullName, bool one)
+    {
+		if(Overrides.ContainsKey(FullName) && Overrides[FullName].ContainsKey(prop.Name))
+			return Overrides[FullName][prop.Name];
+
+		if(!ProjectTypes.ContainsKey(typeFullName))
+		{ 
+			VSHelper.Warning(String.Format("Type {0} does not exists in the current project", typeFullName));
+			return new ModelRelation { Type = ModelRelationType.None };
+        }
+
+		foreach(var cls in ProjectTypes[typeFullName])
+        {
+			foreach(var p in VSHelper.GetProperties(cls))
+            {
+				if(VSHelper.IsEnumerable(p.Type) && VSHelper.IsGeneric(p.Type) && VSHelper.GetGenericAgruments(p.Type).First() == FullName && prop.Name == cls.Name) //generic collection
+                {
+					return new ModelRelation
+						{
+							Type = one ? ModelRelationType.ManyToOne : ModelRelationType.ManyToMany,
+							RelatedModelType = typeFullName,
+							ListType = !one ? VSHelper.GetPropertyType(prop) : null,
+							Property = prop,
+							PathInRelatedModel = p.Name
+						};
+                }
+				if(p.Type.AsFullName == FullName) 
+                {
+					if(one)
+					{
+						if(VSHelper.GetAttribute(prop.Attributes, "T4FluentNH.Attributes.AsOneToOneAttribute") == null) //by default convenction one to one is not generated
+							continue;
+						if(typeFullName == FullName &&  p.Name != prop.Name) //property must be the same when one to one is defined on the same type
+							continue;
+					}
+					return new ModelRelation
+						{
+							Type = one ? ModelRelationType.OneToOne : ModelRelationType.OneToMany,
+							RelatedModelType = typeFullName,
+							ListType = one ? null : VSHelper.GetPropertyType(prop),
+							Property = prop,
+							PathInRelatedModel = p.Name
+						};
+                }
+            }
+        }
+		return new ModelRelation { Type = ModelRelationType.None };
+    }
+
+	private void EditMappedProperty(CodeProperty2 prop)
+    {
+		//Edit collections
+		if(VSHelper.IsEnumerable(prop.Type) && VSHelper.IsGeneric(prop.Type))
+		{
+			var listType = VSHelper.GetGenericAgruments(prop.Type).First();
+			var relation = GetRelation(prop, listType, false);
+			if(relation.Type != ModelRelationType.None)
+            {
+				//Gtt.Warning(string.Format("{0} - {1} = {2}", FullName, listType, relation));
+				RelatedModels.Add(relation);
+				VSHelper.SetAsPublic(prop); //VSHelper.SetAsProtectedInternal(prop); 
+				var listImplType = VSHelper.GetEnumerableImplType(prop);
+                if (listImplType == null)
+                {
+                    var colMapType = relation.CollectionMapType;
+                    if (colMapType == CollectionMapType.Unknown)
+                    {
+                        VSHelper.Warning(string.Format("CollectionMapType is not set for property '{0}' in class '{1}'", prop.Name, Name));
+                        colMapType = Settings.DefaultCollectionMapType;
+                    }
+                    switch (colMapType)
+                    {
+                        case CollectionMapType.Set:
+                        case CollectionMapType.Bag:
+                            listImplType = "HashSet";
+                            break;
+                        case CollectionMapType.List:
+                            listImplType = "List";
+                            break;
+                    }
+                }
+                
+				var newType = VSHelper.GetValidNHibernteEnumerableInterface(prop, listImplType, Settings.Strict);
+                VSHelper.SetPropertyType(prop, newType);
+				var body = string.Format(@"
+		{{
+			{0}
+			{1}
+		}}", string.Format("get {{ return {0} ?? ({0} = new {1}<{2}>()); }}", VSHelper.GetFieldName(prop.Name), listImplType, VSHelper.GetClassName(listType)),
+			string.Format("{0}set {{ {1} = value; }}", Settings.Strict ? "protected " : "", VSHelper.GetFieldName(prop.Name)));
+				VSHelper.SetPropertyBody(prop, body);
+            }
+			return;
+		}
+
+        //Component
+	    if (Components.ContainsKey(FullName) && Components[FullName].ContainsKey(prop.Name))
+	    {
+	        var body = string.Format(@"
+		{{
+			{0}
+			{1}
+		}}", string.Format("get {{ return {0} ?? ({0} = new {1}()); }}", VSHelper.GetFieldName(prop.Name), prop.Type.CodeType.Name),
+			string.Format("{0}set {{ {1} = value; }}", Settings.Strict ? "protected " : "", VSHelper.GetFieldName(prop.Name)));
+            VSHelper.SetPropertyBody(prop, body);
+	    }
+
+		//Edit domain types
+		if(prop.Type.CodeType.IsDerivedFrom[Settings.BaseEntity])
+        {
+			var propType = prop.Type.CodeType.FullName;
+			var relation = GetRelation(prop, propType, true);
+			if(relation.Type != ModelRelationType.None)
+            {
+				//Gtt.Warning(string.Format("{0} - {1} = {2}", FullName, propType, relation));
+				RelatedModels.Add(relation);
+				VSHelper.SetSetter(prop, Settings.Strict ? "protected internal set;" : "set;");
+            }
+			return;
+        }
+    }
+}
+
+
+
+
+#>
+<#+
+
+    public class XmlSettings
+    {
+        public static XmlSettings Load(string path)
+        {
+            if(!File.Exists(path))
+                throw new FileNotFoundException(string.Format("Missing settings at: '{0}'", path));
+
+            var xElement = XElement.Load(path);
+            
+            var settings = new XmlSettings
+            {
+                BaseEntity = xElement.XPathSelectElement("/BaseEntity").Value,
+                Strict = xElement.XPathSelectElement("/Strict").Value.ToUpperInvariant() == "TRUE",
+                DefaultCollectionMapType = (CollectionMapType)Enum.Parse(typeof(CollectionMapType), xElement.XPathSelectElement("/DefaultCollectionMapType").Value, true),
+                KeyColumnPrefix = xElement.XPathSelectElement("/KeyColumn/Prefix").Value,
+                KeyColumnPostfix = xElement.XPathSelectElement("/KeyColumn/Postfix").Value,
+                PropertyRefPrefix = xElement.XPathSelectElement("/PropertyRef/Prefix").Value,
+                PropertyRefPostfix = xElement.XPathSelectElement("/PropertyRef/Postfix").Value
+            };
+            if(string.IsNullOrEmpty(settings.BaseEntity))
+                throw new Exception("BaseEntity is not set");
+            return settings;
+        }
+
+        public string KeyColumnPrefix { get; set; }
+
+        public string KeyColumnPostfix { get; set; }
+
+        public string PropertyRefPrefix { get; set; }
+
+        public string PropertyRefPostfix { get; set; }
+
+        public string BaseEntity { get; set; }
+
+        public CollectionMapType DefaultCollectionMapType { get; set; }
+
+        public bool Strict { get; set; }
+
+    }
+
+
+#>
