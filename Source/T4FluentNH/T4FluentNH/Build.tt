@@ -12,13 +12,15 @@
 <#
     var regex = new Regex(@"[<@#]+\s*include[^>]+>");
     var projDir = Path.GetDirectoryName(Host.TemplateFile);
+    var parentDir = new DirectoryInfo(projDir).Parent.FullName;
     var imports = File.ReadAllText(Path.Combine(projDir, "Imports.ttinclude"));
     var header = File.ReadAllText(Path.Combine(projDir, "Header.ttinclude"));
     var utils = regex.Replace(File.ReadAllText(Path.Combine(projDir, "Utils.ttinclude")), "");
     var vsHelper = regex.Replace(File.ReadAllText(Path.Combine(projDir, "VsHelperInit.ttinclude")), "");
     var domain = regex.Replace(File.ReadAllText(Path.Combine(projDir, "DomainModel.ttinclude")), "");
     var manager = Manager.Create(Host, GenerationEnvironment);
-    var resultPath = Path.Combine(projDir, "T4FluentNH.tt");
+    var resultPath = Path.Combine(parentDir + "\\T4FluentNH.Tests", "T4FluentNH.tt");
+    Warning(resultPath);
     manager.StartNewFile("");
 #>
 <#="<" + "#" + "@" +  " template language=\"C#\" debug=\"true\" hostSpecific=\"true\"" + "#" + ">"#>

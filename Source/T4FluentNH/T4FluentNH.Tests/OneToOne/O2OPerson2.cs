@@ -8,7 +8,7 @@ namespace T4FluentNH.Tests.OneToOne
         public virtual string Name { get; set; }
 
         [AsOneToOne]
-        public virtual O2OIdentityCard2 IdentityCard { get; protected internal set; }
+        public virtual O2OIdentityCard2 IdentityCard { get; set; }
     }
 
     public partial class O2OIdentityCard2 : Entity
@@ -16,6 +16,6 @@ namespace T4FluentNH.Tests.OneToOne
         public virtual string Code { get; set; }
 
         [AsOneToOne]
-        public virtual O2OPerson2 Owner { get; protected internal set; }
+        public virtual O2OPerson2 Owner { get; set; }
     } 
 }

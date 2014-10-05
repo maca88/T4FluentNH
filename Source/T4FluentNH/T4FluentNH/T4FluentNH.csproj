@@ -40,9 +40,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Iesi.Collections.4.0.1.4000\lib\net40\Iesi.Collections.dll</HintPath>
     </Reference>
-    <Reference Include="NHibernate, Version=4.0.0.1001, Culture=neutral, PublicKeyToken=aa95f207798dfdb4, processorArchitecture=MSIL">
+    <Reference Include="NHibernate, Version=4.0.0.4000, Culture=neutral, PublicKeyToken=aa95f207798dfdb4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NHibernate.4.0.0-Alpha2\lib\net40\NHibernate.dll</HintPath>
+      <HintPath>..\packages\NHibernate.4.0.1.4000\lib\net40\NHibernate.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -53,20 +53,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Attributes\AsOneToOneAttribute.cs" />
+    <Compile Include="Conventions\ReadOnlyAttributeConvention.cs" />
     <Compile Include="Extensions\ExpressionExtensions.cs" />
     <Compile Include="Extensions\OneToManyPartExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="Build.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Build.txt</LastGenOutput>
     </None>
     <None Include="DomainModel.ttinclude" />
-    <None Include="T4FluentNH.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>T4FluentNH.cs</LastGenOutput>
-    </None>
     <None Include="VsHelperInit.ttinclude" />
     <None Include="Imports.ttinclude" />
     <None Include="Header.ttinclude" />

@@ -10,6 +10,7 @@ using FluentNHibernate.Conventions.Helpers;
 using NHibernate;
 using NHibernate.Cfg;
 using NHibernate.Tool.hbm2ddl;
+using T4FluentNH.Conventions;
 
 namespace T4FluentNH.Tests
 {
@@ -35,6 +36,7 @@ namespace T4FluentNH.Tests
                 .Assemblies(new AutomappingConfiguration(), new[] { modelAssembly })
                 .UseOverridesFromAssembly(modelAssembly)
                 .IgnoreBase<Entity>()
+                .Conventions.AddFromAssemblyOf<ReadOnlyAttributeConvention>()
                 .Conventions.Add(PrimaryKey.Name.Is(o => "Id"))
                 .Conventions.Add(ForeignKey.EndsWith("Id"));
             fluentConfig

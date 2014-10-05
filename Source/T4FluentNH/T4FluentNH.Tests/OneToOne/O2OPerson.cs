@@ -8,10 +8,10 @@ namespace T4FluentNH.Tests.OneToOne
         public virtual string Name { get; set; }
 
         [AsOneToOne] //cannot be unique
-        public virtual O2OPerson MarriedWith { get; protected internal set; }
+        public virtual O2OPerson MarriedWith { get; set; }
 
         [AsOneToOne] //cannot be unique
-        public virtual O2OPerson Twin { get; protected internal set; }
+        public virtual O2OPerson Twin { get; set; }
 
     }
 }

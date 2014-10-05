@@ -16,6 +16,10 @@ namespace T4FluentNH.Tests.OneToOne
 
 		#region MarriedWith
 
+            
+        [ReadOnly(true)]
+        public virtual int MarriedWithId { get; protected set; }
+
 		public virtual void SetMarriedWith(O2OPerson marriedWith)
         {
             this.SetOneToOne(o => o.MarriedWith, marriedWith, o => o.MarriedWith);
@@ -29,6 +33,10 @@ namespace T4FluentNH.Tests.OneToOne
 		#endregion
 
 		#region Twin
+
+            
+        [ReadOnly(true)]
+        public virtual int TwinId { get; protected set; }
 
 		public virtual void SetTwin(O2OPerson twin)
         {

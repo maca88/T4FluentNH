@@ -8,7 +8,7 @@ namespace T4FluentNH.Tests.OneToOne
     {
         public virtual string Name { get; set; }
 
-        public virtual O2OIdentityCard5 IdentityCard { get; protected internal set; }
+        public virtual O2OIdentityCard5 IdentityCard { get; set; }
     }
 
     public class O2OPerson5Mapping : IAutoMappingOverride<O2OPerson5>
@@ -24,7 +24,7 @@ namespace T4FluentNH.Tests.OneToOne
     {
         public virtual string Code { get; set; }
 
-        public virtual O2OPerson5 Owner { get; protected internal set; }
+        public virtual O2OPerson5 Owner { get; set; }
     }
 
     public class O2OIdentityCard5Mapping : IAutoMappingOverride<O2OIdentityCard5>

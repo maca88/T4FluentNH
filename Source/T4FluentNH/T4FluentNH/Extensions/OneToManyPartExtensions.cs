@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Linq.Expressions;
 using FluentNHibernate.Mapping;
+using T4FluentNH.Extensions;
 
-namespace T4FluentNH.Extensions
+namespace FluentNHibernate.Automapping
 {
     public static class OneToManyPartExtensions
     {
         /// <summary>
-        /// Sets KeyColumn by adding "Id" postfix to the Property pointed by columnExp
+        /// Specify the key column name using the given expression with additional "Id" postfix
         /// </summary>
         /// <typeparam name="TChild"></typeparam>
         /// <param name="oneToMany"></param>
@@ -15,12 +16,12 @@ namespace T4FluentNH.Extensions
         /// <returns></returns>
         public static OneToManyPart<TChild> KeyColumn<TChild>(this OneToManyPart<TChild> oneToMany, Expression<Func<TChild, object>> columnExp)
         {
-            return oneToMany.KeyColumn(columnExp, "", "Id");
+            return oneToMany.KeyColumn(columnExp.GetFullPropertyName() + "Id");
         }
 
-        private static OneToManyPart<TChild> KeyColumn<TChild>(this OneToManyPart<TChild> oneToMany, Expression<Func<TChild, object>> columnExp, string prefix, string postfix)
+        public static OneToManyPart<TChild> PropertyRef<TChild>(this OneToManyPart<TChild> oneToMany, Expression<Func<TChild, object>> columnExp)
         {
-            return oneToMany.KeyColumn(prefix + columnExp.GetFullPropertyName() + postfix);
+            return oneToMany.PropertyRef(columnExp.GetFullPropertyName());
         }
     }
 }

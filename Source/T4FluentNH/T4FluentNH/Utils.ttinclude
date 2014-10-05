@@ -110,8 +110,11 @@ public class VisualStudioHelper : AutomationHelper
 	public string GetValidNHibernteEnumerableInterface(CodeProperty2 prop, string listImplType, bool strict)
 	{
 		var typeName = GetPropertyType(prop);
+	    //if (typeName.Contains("IEnumerable"))
+	     //   typeName = typeName.Replace("IEnumerable", listImplType);
+
 	    if (typeName.Contains("IEnumerable"))
-	        typeName = typeName.Replace("IEnumerable", listImplType);
+	        return typeName;
 
 	    if (typeName.Contains("HashSet") || typeName.Contains("ISet"))
 	        return Regex.Replace(typeName, @"(?:HashSet|PersistentGenericSet)", strict ? "IEnumerable" : "ISet");

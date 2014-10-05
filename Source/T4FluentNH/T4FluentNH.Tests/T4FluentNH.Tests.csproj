@@ -45,9 +45,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Iesi.Collections.4.0.1.4000\lib\net40\Iesi.Collections.dll</HintPath>
     </Reference>
-    <Reference Include="NHibernate, Version=4.0.0.1001, Culture=neutral, PublicKeyToken=aa95f207798dfdb4, processorArchitecture=MSIL">
+    <Reference Include="NHibernate, Version=4.0.0.4000, Culture=neutral, PublicKeyToken=aa95f207798dfdb4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NHibernate.4.0.0-Alpha2\lib\net40\NHibernate.dll</HintPath>
+      <HintPath>..\packages\NHibernate.4.0.1.4000\lib\net40\NHibernate.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
@@ -70,68 +70,87 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="..\T4FluentNH\Entity.generated.cs">
-      <Link>Entity.generated.cs</Link>
+    <Compile Include="Case.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
-    <Compile Include="..\T4FluentNH\M2MUser.generated.cs">
-      <Link>M2MUser.generated.cs</Link>
-      <DependentUpon>T4FluentNH.tt</DependentUpon>
-    </Compile>
-    <Compile Include="..\T4FluentNH\O2OIdentityCard2.generated.cs">
-      <Link>O2OIdentityCard2.generated.cs</Link>
-      <DependentUpon>T4FluentNH.tt</DependentUpon>
-    </Compile>
-    <Compile Include="..\T4FluentNH\O2OIdentityCard3.generated.cs">
-      <Link>O2OIdentityCard3.generated.cs</Link>
-      <DependentUpon>T4FluentNH.tt</DependentUpon>
-    </Compile>
-    <Compile Include="..\T4FluentNH\O2OIdentityCard4.generated.cs">
-      <Link>O2OIdentityCard4.generated.cs</Link>
-      <DependentUpon>T4FluentNH.tt</DependentUpon>
-    </Compile>
-    <Compile Include="..\T4FluentNH\O2OIdentityCard5.generated.cs">
-      <Link>O2OIdentityCard5.generated.cs</Link>
-      <DependentUpon>T4FluentNH.tt</DependentUpon>
-    </Compile>
-    <Compile Include="..\T4FluentNH\O2OPerson.generated.cs">
-      <Link>O2OPerson.generated.cs</Link>
-      <DependentUpon>T4FluentNH.tt</DependentUpon>
-    </Compile>
-    <Compile Include="..\T4FluentNH\O2OPerson2.generated.cs">
-      <Link>O2OPerson2.generated.cs</Link>
-      <DependentUpon>T4FluentNH.tt</DependentUpon>
-    </Compile>
-    <Compile Include="..\T4FluentNH\O2OPerson3.generated.cs">
-      <Link>O2OPerson3.generated.cs</Link>
-      <DependentUpon>T4FluentNH.tt</DependentUpon>
-    </Compile>
-    <Compile Include="..\T4FluentNH\O2OPerson4.generated.cs">
-      <Link>O2OPerson4.generated.cs</Link>
-      <DependentUpon>T4FluentNH.tt</DependentUpon>
-    </Compile>
-    <Compile Include="..\T4FluentNH\O2OPerson5.generated.cs">
-      <Link>O2OPerson5.generated.cs</Link>
-      <DependentUpon>T4FluentNH.tt</DependentUpon>
-    </Compile>
-    <Compile Include="..\T4FluentNH\T4FluentNH.cs">
-      <Link>T4FluentNH.cs</Link>
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>T4FluentNH.tt</DependentUpon>
-    </Compile>
-    <Compile Include="..\T4FluentNH\TestM2MRole.generated.cs">
-      <Link>TestM2MRole.generated.cs</Link>
+    <Compile Include="Entity.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
     <Compile Include="IEntity.cs" />
     <Compile Include="M2MTests.cs" />
+    <Compile Include="M2MUser.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="M2OCar.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="M2OCar2.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="M2OPerson.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="M2OPerson2.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
     <Compile Include="ManyToMany\M2MUser.cs" />
+    <Compile Include="ManyToOne\M2OPerson2.cs" />
+    <Compile Include="ManyToOne\M2OPerson.cs" />
+    <Compile Include="Naming\Case.cs" />
     <Compile Include="NHConfig.cs" />
+    <Compile Include="O2MCar.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="O2MCar2.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="O2MCar3.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="O2MPerson.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="O2MPerson2.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="O2MPerson3.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="O2MPersonTests.cs" />
+    <Compile Include="O2OIdentityCard2.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="O2OIdentityCard3.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="O2OIdentityCard4.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="O2OIdentityCard5.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="O2OPerson.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="O2OPerson2.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
     <Compile Include="O2OPerson2Tests.cs" />
+    <Compile Include="O2OPerson3.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
     <Compile Include="O2OPerson3Tests.cs" />
+    <Compile Include="O2OPerson4.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
     <Compile Include="O2OPerson4Tests.cs" />
+    <Compile Include="O2OPerson5.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
     <Compile Include="O2OPerson5Tests.cs" />
+    <Compile Include="OneToMany\O2MPerson.cs" />
+    <Compile Include="OneToMany\O2MPerson3.cs" />
+    <Compile Include="OneToMany\O2MPerson2.cs" />
     <Compile Include="OneToOne\O2OPerson.cs" />
     <Compile Include="OneToOne\O2OPerson2.cs" />
     <Compile Include="OneToOne\O2OPerson3.cs" />
@@ -139,18 +158,31 @@
     <Compile Include="OneToOne\O2OPerson5.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="O2OPersonTests.cs" />
+    <Compile Include="Switch.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="T4FluentNH.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
     <Compile Include="TestBase.cs" />
+    <Compile Include="TestM2MRole.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\T4FluentNH\T4FluentNH.tt">
-      <Link>T4FluentNH.tt</Link>
+    <None Include="App.config" />
+    <None Include="packages.config" />
+    <None Include="T4FluentNH.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>T4FluentNH.cs</LastGenOutput>
     </None>
-    <None Include="App.config" />
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="T4FluentNH.tt.settings.xml">
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="Test.ldf">
       <DependentUpon>Test.mdf</DependentUpon>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

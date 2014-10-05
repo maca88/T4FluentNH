@@ -15,7 +15,7 @@ namespace T4FluentNH.Tests.ManyToMany
         public virtual ISet<TestM2MRole> Roles
         {
             get { return _roles ?? (_roles = new HashSet<TestM2MRole>()); }
-            protected set { _roles = value; }
+            set { _roles = value; }
         }
     }
 
@@ -32,7 +32,7 @@ namespace T4FluentNH.Tests.ManyToMany
         public virtual ISet<M2MUser> Users
         {
             get { return _users ?? (_users = new HashSet<M2MUser>()); }
-            protected set { _users = value; }
+            set { _users = value; }
         }
     }
 
