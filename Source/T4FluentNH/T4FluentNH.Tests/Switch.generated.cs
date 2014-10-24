@@ -15,7 +15,7 @@ namespace T4FluentNH.Tests.Naming
 		#region Case
 
         [ReadOnly(true)]
-        public virtual int CaseId { get; protected set; }
+        public virtual int? CaseId { get; set; }
 
 		public virtual void SetCase(Case @case)
         {

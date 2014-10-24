@@ -15,7 +15,7 @@ namespace T4FluentNH.Tests.OneToOne
 		#region IdentityCard
 
         [ReadOnly(true)]
-        public virtual int IdentityCardId { get; protected set; }
+        public virtual int? IdentityCardId { get; set; }
 
 		public virtual void SetIdentityCard(O2OIdentityCard5 identityCard)
         {

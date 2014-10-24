@@ -15,7 +15,7 @@ namespace T4FluentNH.Tests.OneToMany
 		#region O2MCar2
 
         [ReadOnly(true)]
-        public virtual int O2MCar2Id { get; protected set; }
+        public virtual int? O2MCar2Id { get; set; }
 
 		#endregion
 

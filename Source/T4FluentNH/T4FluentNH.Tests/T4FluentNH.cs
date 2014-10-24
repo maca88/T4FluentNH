@@ -64,8 +64,8 @@ namespace FluentNHibernate.Automapping
             Expression<Func<TOne, IEnumerable<TMany>>> manyListExpr, TMany many,
             Expression<Func<TMany, TOne>> oneExpr,
             Expression<Func<TOne, Action<TMany>>> removeManyExpr)
-            where TOne : T4FluentNH.Tests.Entity
-            where TMany : T4FluentNH.Tests.Entity
+            where TOne : T4FluentNH.Tests.IEntity
+            where TMany : T4FluentNH.Tests.IEntity
         {
             var enumerable = manyListExpr.Compile()(one);
             var collection = (ICollection<TMany>)enumerable;
@@ -92,8 +92,8 @@ namespace FluentNHibernate.Automapping
             Expression<Func<TOne, IEnumerable<TMany>>> manyListExpr, TMany many,
             Expression<Func<TMany, TOne>> entityExpr
             )
-            where TOne : T4FluentNH.Tests.Entity
-            where TMany : T4FluentNH.Tests.Entity
+            where TOne : T4FluentNH.Tests.IEntity
+            where TMany : T4FluentNH.Tests.IEntity
         {
             var enumerable = manyListExpr.Compile()(one);
             var collection = (ICollection<TMany>)enumerable;
@@ -113,8 +113,8 @@ namespace FluentNHibernate.Automapping
             Expression<Func<TMany, TOne>> oneExpr, TOne newOne,
             Expression<Func<TOne, Action<TMany>>> removeManyExpr,
             Expression<Func<TOne, IEnumerable<TMany>>> manyExp)
-            where TOne : T4FluentNH.Tests.Entity
-            where TMany : T4FluentNH.Tests.Entity
+            where TOne : T4FluentNH.Tests.IEntity
+            where TMany : T4FluentNH.Tests.IEntity
         {
             var one = oneExpr.Compile()(many);
             var onePropInfo = GetPropertyInfo(many, oneExpr);
@@ -136,8 +136,8 @@ namespace FluentNHibernate.Automapping
         public static void UnsetManyToOne<TMany, TOne>(this TMany many,
             Expression<Func<TMany, TOne>> oneExpr,
             Expression<Func<TOne, IEnumerable<TMany>>> manyListExpr)
-            where TOne : T4FluentNH.Tests.Entity
-            where TMany : T4FluentNH.Tests.Entity
+            where TOne : T4FluentNH.Tests.IEntity
+            where TMany : T4FluentNH.Tests.IEntity
         {
             var one = oneExpr.Compile()(many);
             var onePropInfo = GetPropertyInfo(many, oneExpr);
@@ -155,8 +155,8 @@ namespace FluentNHibernate.Automapping
         public static void AddManyToMany<TMany, TMany2>(this TMany many,
             Expression<Func<TMany, IEnumerable<TMany2>>> many2ListExpr, TMany2 many2,
             Expression<Func<TMany2, IEnumerable<TMany>>> manyListExpr)
-            where TMany : T4FluentNH.Tests.Entity
-            where TMany2 : T4FluentNH.Tests.Entity
+            where TMany : T4FluentNH.Tests.IEntity
+            where TMany2 : T4FluentNH.Tests.IEntity
         {
             var many2List = (ICollection<TMany2>)many2ListExpr.Compile()(many);
             var manyList = (ICollection<TMany>)manyListExpr.Compile()(many2);
@@ -171,8 +171,8 @@ namespace FluentNHibernate.Automapping
         public static void RemoveManyToMany<TMany, TMany2>(this TMany many,
             Expression<Func<TMany, IEnumerable<TMany2>>> many2ListExpr, TMany2 many2,
             Expression<Func<TMany2, IEnumerable<TMany>>> manyListExpr)
-            where TMany : T4FluentNH.Tests.Entity
-            where TMany2 : T4FluentNH.Tests.Entity
+            where TMany : T4FluentNH.Tests.IEntity
+            where TMany2 : T4FluentNH.Tests.IEntity
         {
             var many2List = (ICollection<TMany2>)many2ListExpr.Compile()(many);
             var manyList = (ICollection<TMany>)manyListExpr.Compile()(many2);
@@ -187,8 +187,8 @@ namespace FluentNHibernate.Automapping
         public static void SetOneToOne<TOne, TOne2>(this TOne one,
             Expression<Func<TOne, TOne2>> one2Expr, TOne2 one2,
             Expression<Func<TOne2, TOne>> oneExpr)
-            where TOne : T4FluentNH.Tests.Entity
-            where TOne2 : T4FluentNH.Tests.Entity
+            where TOne : T4FluentNH.Tests.IEntity
+            where TOne2 : T4FluentNH.Tests.IEntity
         {
             var oneInOne2 = oneExpr.Compile()(one2);
             var oneInOne2PropInfo = GetPropertyInfo(one2, oneExpr);
@@ -213,8 +213,8 @@ namespace FluentNHibernate.Automapping
         public static void UnsetOneToOne<TOne, TOne2>(this TOne one,
             Expression<Func<TOne, TOne2>> one2Expr,
             Expression<Func<TOne2, TOne>> oneExpr)
-            where TOne : T4FluentNH.Tests.Entity
-            where TOne2 : T4FluentNH.Tests.Entity
+            where TOne : T4FluentNH.Tests.IEntity
+            where TOne2 : T4FluentNH.Tests.IEntity
         {
             var one2 = one2Expr.Compile()(one);
             var one2PropInfo = GetPropertyInfo(one, one2Expr);

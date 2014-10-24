@@ -73,10 +73,36 @@
     <Compile Include="Case.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
+    <Compile Include="CodeList.cs" />
+    <Compile Include="CodeList.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="CustomAttribute.cs" />
     <Compile Include="Entity.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
+    <Compile Include="EntityTypes\ETCodeListEntity.cs" />
+    <Compile Include="EntityTypes\ETInheritedCodeListEntity.cs" />
+    <Compile Include="EntityTypes\ETLengthCodeList.cs" />
+    <Compile Include="EntityTypes\ETSimpleEntity.cs" />
+    <Compile Include="ETCodeListEntity.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="ETInheritedCodeListEntity.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="ETLengthCodeList.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="ETSimpleEntity.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="External\ExtTest.cs" />
+    <Compile Include="ExtTest.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
     <Compile Include="IEntity.cs" />
+    <Compile Include="LengthAttribute.cs" />
     <Compile Include="M2MTests.cs" />
     <Compile Include="M2MUser.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
@@ -98,6 +124,7 @@
     <Compile Include="ManyToOne\M2OPerson.cs" />
     <Compile Include="Naming\Case.cs" />
     <Compile Include="NHConfig.cs" />
+    <Compile Include="NotNullAttribute.cs" />
     <Compile Include="O2MCar.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
@@ -192,6 +219,10 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\T4FluentNH.Domain\T4FluentNH.Domain.csproj">
+      <Project>{9fafd08b-67c4-44d8-8d2a-d8f4b446fceb}</Project>
+      <Name>T4FluentNH.Domain</Name>
+    </ProjectReference>
     <ProjectReference Include="..\T4FluentNH\T4FluentNH.csproj">
       <Project>{0f4d0e27-acaa-448a-a1cf-ca79ff9b42d2}</Project>
       <Name>T4FluentNH</Name>

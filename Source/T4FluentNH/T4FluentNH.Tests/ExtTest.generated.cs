@@ -6,16 +6,16 @@ using System.Linq.Expressions;
 using System.Reflection;
 using FluentNHibernate.Automapping;
 
-namespace T4FluentNH.Tests.ManyToOne
+namespace T4FluentNH.Tests.External
 {
 	[GeneratedCode("T4Template", "1.0")]
-	public partial class M2OPerson
+	public partial class ExtTest
 	{
 
-		#region Car
+		#region User
 
         [ReadOnly(true)]
-        public virtual int? CarId { get; set; }
+        public virtual int? UserId { get; set; }
 
 		#endregion
 

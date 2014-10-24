@@ -15,7 +15,7 @@ namespace T4FluentNH.Tests.ManyToOne
 		#region Person
 
         [ReadOnly(true)]
-        public virtual int PersonId { get; protected set; }
+        public virtual int? PersonId { get; set; }
 
 		#endregion
 

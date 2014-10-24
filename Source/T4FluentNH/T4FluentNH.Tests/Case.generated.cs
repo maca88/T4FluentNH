@@ -15,7 +15,7 @@ namespace T4FluentNH.Tests.Naming
 		#region Switch
 
         [ReadOnly(true)]
-        public virtual int SwitchId { get; protected set; }
+        public virtual int? SwitchId { get; set; }
 
 		public virtual void SetSwitch(Switch @switch)
         {

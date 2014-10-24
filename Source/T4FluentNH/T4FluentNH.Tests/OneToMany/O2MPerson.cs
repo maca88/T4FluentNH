@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using FluentNHibernate.Automapping;
@@ -25,6 +26,7 @@ namespace T4FluentNH.Tests.OneToMany
     {
         public virtual string Model { get; set; }
 
+        [NotNull]
         public virtual O2MPerson Owner { get; set; }
 
     }

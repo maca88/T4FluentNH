@@ -175,6 +175,50 @@ public class VisualStudioHelper : AutomationHelper
             IsNullable(type);
     }
 
+    public bool IsValueType(string typeFullName)
+    {
+        var type = Type.GetType(typeFullName);
+	    if(type == null) return false; //External type
+        return type.IsValueType;
+    }
+
+    public string SimplifyTypeName(string typeFullName)
+    {
+        switch (typeFullName)
+        {
+            case "System.Int16":
+                return "short";
+            case "System.Int32":
+                return "int";
+            case "System.Int64":
+                return "long";
+            case "System.String":
+                return "string";
+            case "System.Decimal":
+                return "decimal";
+            default:
+                return typeFullName;
+        }
+    }
+
+    public bool IsSimpleType(string typeFullName)
+    {
+        var type = Type.GetType(typeFullName);
+		if(type == null) return false; //External type
+        return
+            type.IsPrimitive ||
+            type == typeof (Decimal) ||
+            type == typeof (String) ||
+            type == typeof (DateTime) ||
+            type == typeof (TimeSpan) ||
+            type == typeof (DateTimeOffset);
+    }
+
+    public bool IsSimpleType(CodeTypeRef codeTypeRef)
+    {
+        return IsSimpleType(codeTypeRef.AsFullName);
+    }
+
     public bool IsNullable(CodeTypeRef codeTypeRef)
     {
 		var type = Type.GetType(codeTypeRef.AsFullName);

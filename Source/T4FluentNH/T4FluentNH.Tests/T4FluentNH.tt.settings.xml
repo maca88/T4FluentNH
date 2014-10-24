@@ -1,15 +1,64 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Settings>
-  <BaseEntity>T4FluentNH.Tests.Entity</BaseEntity>
-  <IdentifierPropertyType>int</IdentifierPropertyType>
+  <BaseEntityType>T4FluentNH.Tests.IEntity</BaseEntityType>
+  <EntityTypes>
+    <EntityType>
+      <DerivedFromType>T4FluentNH.Tests.CodeList</DerivedFromType>
+      <IdentifierPropertyType>System.String</IdentifierPropertyType>
+      <IdentifierLength>20</IdentifierLength>
+      <CustomIdentifierLengths>
+        <CustomIdentifierLength>
+          <Type>T4FluentNH.Tests.EntityTypes.ETLengthCodeList</Type>
+          <Length>30</Length>
+        </CustomIdentifierLength>
+      </CustomIdentifierLengths>
+      <KeyColumn>
+        <Prefix></Prefix>
+        <Postfix>Code</Postfix>
+      </KeyColumn>
+    </EntityType>
+    <EntityType>
+      <DerivedFromType>T4FluentNH.Tests.Entity</DerivedFromType>
+      <IdentifierPropertyType>System.Int32</IdentifierPropertyType>
+      <KeyColumn>
+        <Prefix></Prefix>
+        <Postfix>Id</Postfix>
+      </KeyColumn>
+    </EntityType>
+    <EntityType>
+      <DerivedFromType>T4FluentNH.Domain.IUser</DerivedFromType>
+      <IdentifierPropertyType>System.Int32</IdentifierPropertyType>
+      <KeyColumn>
+        <Prefix></Prefix>
+        <Postfix>Id</Postfix>
+      </KeyColumn>
+    </EntityType>
+  </EntityTypes>
   <Strict>False</Strict>
-  <SyntheticProperties>True</SyntheticProperties>
+  <SyntheticProperties>
+    <Generate>True</Generate>
+    <Comment>Test</Comment>
+    <AddNotNullAttribute>False</AddNotNullAttribute>
+    <AddLengthAttribute>False</AddLengthAttribute>
+    <CustomAttributes>
+      <CustomAttribute>ReadOnly(true)</CustomAttribute>
+    </CustomAttributes>
+  </SyntheticProperties>
+  <ExternalTypes>
+    <ExternalType>
+      <FullName>T4FluentNH.Domain.IUser</FullName>
+      <DerivedFromType>T4FluentNH.Domain.IUser</DerivedFromType>
+    </ExternalType>
+    <ExternalType>
+      <FullName>T4FluentNH.Domain.User</FullName>
+      <DerivedFromType>T4FluentNH.Domain.IUser</DerivedFromType>
+    </ExternalType>
+  </ExternalTypes>
+  
+  <NotNullAttribute>T4FluentNH.Tests.NotNullAttribute</NotNullAttribute>
+  <LengthAttribute>T4FluentNH.Tests.LengthAttribute</LengthAttribute>
   <DefaultCollectionMapType>Set</DefaultCollectionMapType>
   <IgnoreTypes>
     <!--<IgnoreType>T4FluentNH.Tests.OneToMany.M2OCar</IgnoreType>-->
   </IgnoreTypes>
-  <KeyColumn>
-    <Prefix></Prefix>
-    <Postfix>Id</Postfix>
-  </KeyColumn>
 </Settings>

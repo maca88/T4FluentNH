@@ -1,12 +1,29 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Settings>
-  <BaseEntity>T4FluentNH.Tests.Entity</BaseEntity>
-  <IdentifierPropertyType>int</IdentifierPropertyType>
+  <BaseEntityType>T4FluentNH.Tests.Entity</BaseEntityType>
+  <EntityTypes>
+    <EntityType>
+      <DerivedFromType>T4FluentNH.Tests.CodeList</DerivedFromType>
+      <IdentifierPropertyType>string</IdentifierPropertyType>
+      <KeyColumn>
+        <Prefix></Prefix>
+        <Postfix>Code</Postfix>
+      </KeyColumn>
+    </EntityType>
+    <EntityType>
+      <DerivedFromType>T4FluentNH.Tests.Entity</DerivedFromType>
+      <IdentifierPropertyType>int</IdentifierPropertyType>
+      <KeyColumn>
+        <Prefix></Prefix>
+        <Postfix>Id</Postfix>
+      </KeyColumn>
+    </EntityType>
+  </EntityTypes>
   <Strict>False</Strict>
   <SyntheticProperties>True</SyntheticProperties>
+  <NotNullAttribute>T4FluentNH.Tests.NotNullAttribute</NotNullAttribute>
   <DefaultCollectionMapType>Set</DefaultCollectionMapType>
-  <KeyColumn>
-    <Prefix></Prefix>
-    <Postfix>Id</Postfix>
-  </KeyColumn>
+  <IgnoreTypes>
+    <!--<IgnoreType>T4FluentNH.Tests.OneToMany.M2OCar</IgnoreType>-->
+  </IgnoreTypes>
 </Settings>
