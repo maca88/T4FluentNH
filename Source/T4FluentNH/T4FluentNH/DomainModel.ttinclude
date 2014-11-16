@@ -323,12 +323,23 @@ manager.EndBlock();
 
 foreach(var type in domainClasses.Values)
 {
-	manager.StartNewFile(string.Format("{0}.generated.cs", type.Name)); 
+
+    var fileName = type.Name;
+    var classNamePostFix = "";
+    if (type.CodeClass.IsGeneric)
+    {
+        classNamePostFix = string.Format("<{0}>", string.Join(", ", VSHelper.GetGenericAgruments(type.FullName)));
+        fileName = string.Format("{0}({1})", type.Name, string.Join("_", VSHelper.GetGenericAgruments(type.FullName)));
+
+        //VSHelper.Warning(type.FullName + " - " + type.Name + " - " + type.CodeClass.Kind.ToString());
+    }
+    
+	manager.StartNewFile(string.Format("{0}.generated.cs", fileName)); 
 #>
 namespace <#=type.Namespace.FullName#>
 {
 	[GeneratedCode("T4Template", "1.0")]
-	public partial class <#=type.Name#>
+	public partial class <#=type.Name + classNamePostFix#>
 	{
 
 <#
@@ -881,9 +892,12 @@ public class DomainModelWrapper
 		//VSHelper.Warning(_domainModel.FullName);
 		foreach(CodeProperty2 prop in VSHelper.GetProperties(_domainModel))
 		{
-			VSHelper.SetAsVirtual(prop);
+			//dont touch overrides and abstract props           
+            if(prop.OverrideKind != vsCMOverrideKind.vsCMOverrideKindOverride && prop.OverrideKind != vsCMOverrideKind.vsCMOverrideKindAbstract)
+			    VSHelper.SetAsVirtual(prop);
 
-			if (!VSHelper.IsNHibernateProperty(prop) || Settings.IgnoreTypes.Contains(prop.Type.AsFullName))
+			if (!VSHelper.IsNHibernateProperty(prop) || Settings.IgnoreTypes.Contains(prop.Type.AsFullName) ||
+                prop.Type.TypeKind == vsCMTypeRef.vsCMTypeRefOther) //Generic type
 		        continue;
 			
 			if (VSHelper.IsEnumerable(prop.Type) && VSHelper.IsGeneric(prop.Type))

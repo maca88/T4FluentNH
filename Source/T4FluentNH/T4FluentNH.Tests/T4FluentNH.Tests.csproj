@@ -81,10 +81,16 @@
     <Compile Include="Entity.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
-    <Compile Include="EntityTypes\ETCodeListEntity.cs" />
+    <Compile Include="EntityTypes\ETCodeListEntity.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="EntityTypes\ETInheritedCodeListEntity.cs" />
-    <Compile Include="EntityTypes\ETLengthCodeList.cs" />
-    <Compile Include="EntityTypes\ETSimpleEntity.cs" />
+    <Compile Include="EntityTypes\ETLengthCodeList.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="EntityTypes\ETSimpleEntity.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="ETCodeListEntity.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
@@ -97,8 +103,36 @@
     <Compile Include="ETSimpleEntity.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
-    <Compile Include="External\ExtTest.cs" />
+    <Compile Include="External\ExtTest.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="ExtTest.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Generics\GenOrganization.cs" />
+    <Compile Include="Generics\GenOrganizationRole.cs" />
+    <Compile Include="Generics\GenRole.cs" />
+    <Compile Include="Generics\GenUser.cs" />
+    <Compile Include="Generics\GenUserRole.cs" />
+    <Compile Include="GenOrganization%28TUser_ TOrganization%29.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="GenOrganization.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="GenOrganizationRole%28TOrganization%29.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="GenRole.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="GenUser%28TUser_ TOrganization%29.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="GenUser.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="GenUserRole%28TUser%29.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
     <Compile Include="IEntity.cs" />
@@ -120,8 +154,8 @@
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
     <Compile Include="ManyToMany\M2MUser.cs" />
-    <Compile Include="ManyToOne\M2OPerson2.cs" />
     <Compile Include="ManyToOne\M2OPerson.cs" />
+    <Compile Include="ManyToOne\M2OPerson2.cs" />
     <Compile Include="Naming\Case.cs" />
     <Compile Include="NHConfig.cs" />
     <Compile Include="NotNullAttribute.cs" />
@@ -175,14 +209,24 @@
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
     <Compile Include="O2OPerson5Tests.cs" />
-    <Compile Include="OneToMany\O2MPerson.cs" />
-    <Compile Include="OneToMany\O2MPerson3.cs" />
+    <Compile Include="OneToMany\O2MPerson.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="OneToMany\O2MPerson2.cs" />
-    <Compile Include="OneToOne\O2OPerson.cs" />
-    <Compile Include="OneToOne\O2OPerson2.cs" />
-    <Compile Include="OneToOne\O2OPerson3.cs" />
+    <Compile Include="OneToMany\O2MPerson3.cs" />
+    <Compile Include="OneToOne\O2OPerson.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="OneToOne\O2OPerson2.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="OneToOne\O2OPerson3.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="OneToOne\O2OPerson4.cs" />
-    <Compile Include="OneToOne\O2OPerson5.cs" />
+    <Compile Include="OneToOne\O2OPerson5.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="O2OPersonTests.cs" />
     <Compile Include="Switch.generated.cs">
