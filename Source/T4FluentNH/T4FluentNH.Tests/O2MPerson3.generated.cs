@@ -5,7 +5,6 @@ using System.CodeDom.Compiler;
 using System.Linq.Expressions;
 using System.Reflection;
 using FluentNHibernate.Automapping;
-
 namespace T4FluentNH.Tests.OneToMany
 {
 	[GeneratedCode("T4Template", "1.0")]
@@ -14,7 +13,7 @@ namespace T4FluentNH.Tests.OneToMany
 
 		#region Cars
 
-		private ISet<O2MCar3> _cars;
+		private ISet<T4FluentNH.Tests.OneToMany.O2MCar3> _cars;
 
 		#endregion
 

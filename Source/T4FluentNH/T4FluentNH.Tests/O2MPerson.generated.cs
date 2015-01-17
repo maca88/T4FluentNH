@@ -5,7 +5,6 @@ using System.CodeDom.Compiler;
 using System.Linq.Expressions;
 using System.Reflection;
 using FluentNHibernate.Automapping;
-
 namespace T4FluentNH.Tests.OneToMany
 {
 	[GeneratedCode("T4Template", "1.0")]
@@ -14,14 +13,14 @@ namespace T4FluentNH.Tests.OneToMany
 
 		#region Cars
 
-		private ISet<O2MCar> _cars;
+		private ISet<T4FluentNH.Tests.OneToMany.O2MCar> _cars;
 
-        public virtual void AddCar(O2MCar car)
+        public virtual void AddCar(T4FluentNH.Tests.OneToMany.O2MCar car)
         {
             this.AddOneToMany(o => o.Cars, car, o => o.Owner, o=> o.RemoveCar);
         }
 
-        public virtual void RemoveCar(O2MCar car)
+        public virtual void RemoveCar(T4FluentNH.Tests.OneToMany.O2MCar car)
         {
             this.RemoveOneToMany(o => o.Cars, car, o => o.Owner);
         }

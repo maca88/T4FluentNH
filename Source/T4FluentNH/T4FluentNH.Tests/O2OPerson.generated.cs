@@ -5,7 +5,6 @@ using System.CodeDom.Compiler;
 using System.Linq.Expressions;
 using System.Reflection;
 using FluentNHibernate.Automapping;
-
 namespace T4FluentNH.Tests.OneToOne
 {
 	[GeneratedCode("T4Template", "1.0")]
@@ -17,7 +16,7 @@ namespace T4FluentNH.Tests.OneToOne
         [ReadOnly(true)]
         public virtual int? MarriedWithId { get; set; }
 
-		public virtual void SetMarriedWith(O2OPerson marriedWith)
+		public virtual void SetMarriedWith(T4FluentNH.Tests.OneToOne.O2OPerson marriedWith)
         {
             this.SetOneToOne(o => o.MarriedWith, marriedWith, o => o.MarriedWith);
         }
@@ -34,7 +33,7 @@ namespace T4FluentNH.Tests.OneToOne
         [ReadOnly(true)]
         public virtual int? TwinId { get; set; }
 
-		public virtual void SetTwin(O2OPerson twin)
+		public virtual void SetTwin(T4FluentNH.Tests.OneToOne.O2OPerson twin)
         {
             this.SetOneToOne(o => o.Twin, twin, o => o.Twin);
         }

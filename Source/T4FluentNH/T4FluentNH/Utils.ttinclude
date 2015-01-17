@@ -107,11 +107,16 @@ public class VisualStudioHelper : AutomationHelper
 		return PluralizationService.Singularize(name);
 	}
 
-	public string GetValidNHibernteEnumerableInterface(CodeProperty2 prop, string listImplType, bool strict)
+	public string GetValidNHibernteEnumerableInterface(CodeProperty2 prop, string listImplType, bool strict, string newItemType = null) 
 	{
 		var typeName = GetPropertyType(prop);
 	    //if (typeName.Contains("IEnumerable"))
 	     //   typeName = typeName.Replace("IEnumerable", listImplType);
+	    if (!string.IsNullOrEmpty(newItemType))
+	    {
+	        typeName = Regex.Replace(typeName, "<([^.]+)>", "<" + newItemType + ">");
+	    }
+         
 
 	    if (typeName.Contains("IEnumerable"))
 	        return typeName;

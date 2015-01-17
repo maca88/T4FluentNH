@@ -5,7 +5,6 @@ using System.CodeDom.Compiler;
 using System.Linq.Expressions;
 using System.Reflection;
 using FluentNHibernate.Automapping;
-
 namespace T4FluentNH.Tests.OneToOne
 {
 	[GeneratedCode("T4Template", "1.0")]
@@ -17,7 +16,7 @@ namespace T4FluentNH.Tests.OneToOne
         [ReadOnly(true)]
         public virtual int? IdentityCardId { get; set; }
 
-		public virtual void SetIdentityCard(O2OIdentityCard3 identityCard)
+		public virtual void SetIdentityCard(T4FluentNH.Tests.OneToOne.O2OIdentityCard3 identityCard)
         {
             this.SetOneToOne(o => o.IdentityCard, identityCard, o => o.Owner);
         }

@@ -362,21 +362,27 @@ VSHelper.ProcessFiles(projectItems, (file, name) =>
 		}));
 
 manager.StartHeader(); 
-#>
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.CodeDom.Compiler;
-using System.Linq.Expressions;
-using System.Reflection;
-using FluentNHibernate.Automapping;
 
+var knownNamespaces = new HashSet<string>()
+    {
+        "System",
+        "System.Collections.Generic",
+        "System.ComponentModel",
+        "System.CodeDom.Compiler",
+        "System.Linq.Expressions",
+        "System.Reflection",
+        "FluentNHibernate.Automapping",
+    };
+foreach (var ns in knownNamespaces)
+{
+#>
+using <#=ns#>;
 <#
+}
 manager.EndBlock(); 
 
 foreach(var type in domainClasses.Values)
 {
-
     var fileName = type.Name;
     var classNamePostFix = "";
     if (type.CodeClass.IsGeneric)
@@ -425,9 +431,12 @@ namespace <#=type.Namespace.FullName#>
             ? type.Name
             : relation.Property.Name;
 	    var externalType = settings.GetExternalType(relation.RelatedModelType);
+
+	    var useFullNs = relatedType != null && (type.Namespace.FullName != relatedType.Namespace.FullName ||
+	                    !knownNamespaces.Contains(relatedType.Namespace.FullName));
 	    var relatedTypeName = relatedType != null
-	        ? relatedType.Name
-	        : relation.RelatedModelType.Split('.').Last();
+	        ? (useFullNs ? relatedType.FullName : relatedType.Name)
+	        : (useFullNs ? relation.RelatedModelType : relation.RelatedModelType.Split('.').Last());
 	    var syntheticPropRequired = relation.Property != null && 
             VSHelper.GetAttribute(relation.Property.Attributes, settings.NotNullAttribute) != null;
 	    var entityType = relatedType != null 
@@ -456,7 +465,7 @@ namespace <#=type.Namespace.FullName#>
         {
 			case ModelRelationType.OneToMany:
 #>
-		private <#=VSHelper.GetValidNHibernteEnumerableInterface(relation.Property, relation.ListType, settings.Strict)#> <#=fieldName#>;
+		private <#=VSHelper.GetValidNHibernteEnumerableInterface(relation.Property, relation.ListType, settings.Strict, relatedTypeName)#> <#=fieldName#>;
 <#
                 if (relation.AssociationType == AssociationType.Bidirectional)
                 {
@@ -1423,11 +1432,16 @@ public class VisualStudioHelper : AutomationHelper
 		return PluralizationService.Singularize(name);
 	}
 
-	public string GetValidNHibernteEnumerableInterface(CodeProperty2 prop, string listImplType, bool strict)
+	public string GetValidNHibernteEnumerableInterface(CodeProperty2 prop, string listImplType, bool strict, string newItemType = null) 
 	{
 		var typeName = GetPropertyType(prop);
 	    //if (typeName.Contains("IEnumerable"))
 	     //   typeName = typeName.Replace("IEnumerable", listImplType);
+	    if (!string.IsNullOrEmpty(newItemType))
+	    {
+	        typeName = Regex.Replace(typeName, "<([^.]+)>", "<" + newItemType + ">");
+	    }
+         
 
 	    if (typeName.Contains("IEnumerable"))
 	        return typeName;

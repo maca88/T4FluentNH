@@ -5,7 +5,6 @@ using System.CodeDom.Compiler;
 using System.Linq.Expressions;
 using System.Reflection;
 using FluentNHibernate.Automapping;
-
 namespace T4FluentNH.Tests.Naming
 {
 	[GeneratedCode("T4Template", "1.0")]
@@ -17,7 +16,7 @@ namespace T4FluentNH.Tests.Naming
         [ReadOnly(true)]
         public virtual int? CaseId { get; set; }
 
-		public virtual void SetCase(Case @case)
+		public virtual void SetCase(T4FluentNH.Tests.Naming.Case @case)
         {
             this.SetOneToOne(o => o.Case, @case, o => o.Switch);
         }

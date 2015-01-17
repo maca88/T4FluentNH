@@ -5,7 +5,6 @@ using System.CodeDom.Compiler;
 using System.Linq.Expressions;
 using System.Reflection;
 using FluentNHibernate.Automapping;
-
 namespace T4FluentNH.Tests.OneToOne
 {
 	[GeneratedCode("T4Template", "1.0")]
@@ -17,7 +16,7 @@ namespace T4FluentNH.Tests.OneToOne
         [ReadOnly(true)]
         public virtual int? OwnerId { get; set; }
 
-		public virtual void SetOwner(O2OPerson2 owner)
+		public virtual void SetOwner(T4FluentNH.Tests.OneToOne.O2OPerson2 owner)
         {
             this.SetOneToOne(o => o.Owner, owner, o => o.IdentityCard);
         }
