@@ -107,6 +107,119 @@ public class VisualStudioHelper : AutomationHelper
 		return PluralizationService.Singularize(name);
 	}
 
+    public List<CodeProperty> GetInheritedProperties(CodeType element)
+    {
+        // If it's a local code element, we may be able to enumerate all its partial classes
+        if (element.InfoLocation == vsCMInfoLocation.vsCMInfoLocationProject)
+        {
+            var codeClass2 = element as CodeClass2;
+            if (codeClass2 != null)
+            {
+                var memberDict = new Dictionary<string, CodeElement>();
+                foreach (var partialClass in codeClass2.PartialClasses.OfType<CodeType>())
+                {
+                    if (GetAttribute(partialClass.Attributes, "System.CodeDom.Compiler.GeneratedCodeAttribute") != null)
+                        continue;
+                    var baseMembers = partialClass.Bases.OfType<CodeType>().SelectMany(x => VisibleMembers(x).OfType<CodeElement>());
+                    
+                    // Ensure we only have one entry per name from all the bases
+                    foreach (var baseMember in baseMembers) {
+                        memberDict[baseMember.Name] = baseMember;
+                    }
+                }
+                return memberDict.Values.OfType<CodeProperty>().ToList();
+            }
+        }
+        return new List<CodeProperty>();
+    }
+
+    /// <summary>
+    /// Finds a visible property matching any one of a set of possible names. The names are considered in
+    /// priority order, with earlier entries in the array taking higher priority.
+    /// </summary>
+    public CodeProperty FindProperty(CodeType codeType, params string[] namesToMatch)
+    {
+        var candidateProperties = VisibleMembers(codeType).OfType<CodeProperty>().ToList();
+        var comparison = vsProjectType.VisualBasicCodeModelLanguage.Equals(codeType.Language, StringComparison.OrdinalIgnoreCase)
+                                ? StringComparison.OrdinalIgnoreCase // VB
+                                : StringComparison.Ordinal;          // C#
+        foreach (var name in namesToMatch) {
+            var matchingProperty = candidateProperties.FirstOrDefault(x => string.Equals(x.Name, name, comparison));
+            if (matchingProperty != null)
+                return matchingProperty;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Scans all partial classes and all base types to get a list of all the
+    /// members exposed by a type
+    /// </summary>
+    public CodeElements VisibleMembers(CodeType element)
+    {
+        if (element == null) throw new ArgumentNullException("element");
+
+        // If it's a local code element, we may be able to enumerate all its partial classes
+        if (element.InfoLocation == vsCMInfoLocation.vsCMInfoLocationProject)
+        {
+            var codeClass2 = element as CodeClass2;
+            if (codeClass2 != null)
+            {
+                var partialsCodeElements = new List<CodeElement>();
+                var isFirstPartialClass = true;
+                foreach (var partialClass in codeClass2.PartialClasses.OfType<CodeType>()) {
+                    partialsCodeElements.AddRange(VisibleMembersIgnorePartials(partialClass, includeBaseMembers: isFirstPartialClass).OfType<CodeElement>());
+                    isFirstPartialClass = false; // Only scan base types once per partial class set, otherwise we'll get duplicates of the bases
+                }
+                return new ConcreteCodeElements(element, partialsCodeElements);
+            }
+        }
+
+        return VisibleMembersIgnorePartials(element, true);
+    }
+
+    public CodeElements VisibleMembersIgnorePartials(CodeType element, bool includeBaseMembers)
+    {
+        var baseMembers = includeBaseMembers
+                                ? element.Bases.OfType<CodeType>().SelectMany(x => VisibleMembers(x).OfType<CodeElement>())
+                                : Enumerable.Empty<CodeElement>();
+
+        var nameComparer = string.Equals(element.Language, vsProjectType.VisualBasicCodeModelLanguage, StringComparison.OrdinalIgnoreCase)
+                                ? StringComparer.OrdinalIgnoreCase // VB has case-insensitive identifiers
+                                : StringComparer.Ordinal;          // Supported other languages (C#) don't
+
+        // Ensure we only have one entry per name from all the bases
+        var memberDict = new Dictionary<string, CodeElement>(nameComparer);
+        foreach (var baseMember in baseMembers) {
+            memberDict[baseMember.Name] = baseMember;
+        }
+
+        // Now overlay members at this level
+        foreach (var codeElement in element.Members.OfType<CodeElement>()) {
+            if (IsPublic(codeElement))
+                memberDict[codeElement.Name] = codeElement;
+        }
+
+        return new ConcreteCodeElements(element, memberDict.Values);
+    }
+
+    public bool IsPublic(CodeElement codeElement)
+    {
+        if (codeElement is CodeType)
+            return ((CodeType)codeElement).Access == vsCMAccess.vsCMAccessPublic;
+        if (codeElement is CodeProperty)
+            return ((CodeProperty)codeElement).Access == vsCMAccess.vsCMAccessPublic;
+        if (codeElement is CodeFunction)
+            return ((CodeFunction)codeElement).Access == vsCMAccess.vsCMAccessPublic;
+        if (codeElement is CodeVariable)
+            return ((CodeVariable)codeElement).Access == vsCMAccess.vsCMAccessPublic;
+        if (codeElement is CodeStruct)
+            return ((CodeStruct)codeElement).Access == vsCMAccess.vsCMAccessPublic;
+        if (codeElement is CodeDelegate)
+            return ((CodeDelegate)codeElement).Access == vsCMAccess.vsCMAccessPublic;
+        return false;
+    }
+
 	public string GetValidNHibernteEnumerableInterface(CodeProperty2 prop, string listImplType, bool strict, string newItemType = null) 
 	{
 		var typeName = GetPropertyType(prop);
@@ -1276,5 +1389,63 @@ public class vsProjectType
 	public const string VisualCPlusPlus = "{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}";
 	public const string VisualJSharp = "{E6FDF86B-F3D1-11D4-8576-0002A516ECE8}";
 	public const string WebProject = "{E24C65DC-7377-472b-9ABA-BC803B73C61A}";
+    public const string VisualBasicCodeModelLanguage = "{B5E9BD33-6D3E-4B5D-925E-8A43B79820B4}";
+}
+
+
+private class ConcreteCodeElements : MarshalByRefObject, CodeElements
+{
+    private readonly CodeType _primaryCodeType;
+    private readonly IList<CodeElement> _codeElements;
+
+    public ConcreteCodeElements(CodeType primaryCodeType, IEnumerable<CodeElement> codeElements)
+    {
+        _primaryCodeType = primaryCodeType;
+        _codeElements = codeElements.ToList();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return _codeElements.GetEnumerator();
+    }
+
+    public CodeElement Item(object index)
+    {
+        if (index is int)
+        {
+            return _codeElements[(int)index];
+        }
+        throw new ArgumentException();
+    }
+
+    public void Reserved1(object element)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool CreateUniqueID(string prefix, ref string newName)
+    {
+        throw new NotImplementedException();
+    }
+
+    public DTE DTE
+    {
+        get { return _primaryCodeType.DTE; }
+    }
+
+    public object Parent
+    {
+        get { return _primaryCodeType; }
+    }
+
+    public int Count
+    {
+        get { return _codeElements.Count; }
+    }
+
+    IEnumerator CodeElements.GetEnumerator()
+    {
+        return _codeElements.GetEnumerator();
+    }
 }
 #>

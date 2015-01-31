@@ -404,6 +404,10 @@ namespace <#=type.Namespace.FullName#>
 	        paramName = "@" + paramName;
 		
 		var fieldName = VSHelper.GetFieldName(propName);
+
+	    var generateSyntheticProp = settings.SyntheticProperties.Generate && 
+            VSHelper.GetInheritedProperties((CodeType) type.CodeClass).All(o => o.Name != syntheticPropName);
+
 #>
 		#region <#=propName#>
 
@@ -450,7 +454,7 @@ namespace <#=type.Namespace.FullName#>
                 }
                 break;
 			case ModelRelationType.ManyToOne:
-                if (settings.SyntheticProperties.Generate)
+                if (generateSyntheticProp)
                 {
                     foreach (var attr in settings.SyntheticProperties.CustomAttributes)
                     {
@@ -491,7 +495,7 @@ namespace <#=type.Namespace.FullName#>
                 }
                 break;
 			case ModelRelationType.OneToOne:
-                if (settings.SyntheticProperties.Generate)
+                if (generateSyntheticProp)
                 {
                     foreach (var attr in settings.SyntheticProperties.CustomAttributes)
                     {
