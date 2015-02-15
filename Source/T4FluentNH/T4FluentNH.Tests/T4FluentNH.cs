@@ -153,33 +153,6 @@ namespace FluentNHibernate.Automapping
             User = null;*/
         }
 
-        public static void UnsetManyToOne<TMany, TOne, TManySynth>(this TMany many,
-            Expression<Func<TMany, TOne>> oneExpr,
-            Expression<Func<TOne, IEnumerable<TMany>>> manyListExpr,
-            Expression<Func<TMany, TManySynth>> oneSynthExpr)
-            where TOne : T4FluentNH.Tests.IEntity
-            where TMany : T4FluentNH.Tests.IEntity
-        {
-            var one = oneExpr.Compile()(many);
-            var onePropInfo = GetPropertyInfo(many, oneExpr);
-            var manyList = (ICollection<TMany>)manyListExpr.Compile()(one);
-
-            if (oneSynthExpr != null)
-            {
-                var oneSynthPropInfo = GetPropertyInfo(many, oneSynthExpr);
-                oneSynthPropInfo.SetValue(many, GetDefault(oneSynthPropInfo.PropertyType)); //Reset synthetic prop
-            }
-
-            if (one == null) return;
-            RemoveIfExist(manyList, many);
-            onePropInfo.SetValue(many, null);
-            /*
-            UserId = default(TYPE)
-            if(User == null) return;
-            RemoveIfExist(User.Locations, this);
-            User = null;*/
-        }
-
         public static void AddManyToMany<TMany, TMany2>(this TMany many,
             Expression<Func<TMany, IEnumerable<TMany2>>> many2ListExpr, TMany2 many2,
             Expression<Func<TMany2, IEnumerable<TMany>>> manyListExpr)
