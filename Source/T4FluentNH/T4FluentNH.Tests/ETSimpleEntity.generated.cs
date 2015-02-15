@@ -13,24 +13,54 @@ namespace T4FluentNH.Tests.EntityTypes
 
 		#region CodeListEntity
 
+        private ETCodeListEntity _codeListEntity;
+
         [ReadOnly(true)]
-        public virtual string CodeListEntityCode { get; set; }
+		public virtual string CodeListEntityCode 
+		{ 
+			get { return _codeListEntityCode != default(string) || CodeListEntity == null ? _codeListEntityCode : CodeListEntity.Code; } 
+			set { _codeListEntityCode = value; }
+		}
+
+		private string _codeListEntityCode;
 
 		#endregion
 
 		#region InheritCodeListEntity
 
+        private ETInheritedCodeListEntity _inheritCodeListEntity;
+
         [ReadOnly(true)]
-        public virtual string InheritCodeListEntityCode { get; set; }
+		public virtual string InheritCodeListEntityCode 
+		{ 
+			get { return _inheritCodeListEntityCode != default(string) || InheritCodeListEntity == null ? _inheritCodeListEntityCode : InheritCodeListEntity.Code; } 
+			set { _inheritCodeListEntityCode = value; }
+		}
+
+		private string _inheritCodeListEntityCode;
 
 		#endregion
 
 		#region LengthCodeListEntity
 
+        private ETLengthCodeList _lengthCodeListEntity;
+
         [ReadOnly(true)]
-        public virtual string LengthCodeListEntityCode { get; set; }
+		public virtual string LengthCodeListEntityCode 
+		{ 
+			get { return _lengthCodeListEntityCode != default(string) || LengthCodeListEntity == null ? _lengthCodeListEntityCode : LengthCodeListEntity.Code; } 
+			set { _lengthCodeListEntityCode = value; }
+		}
+
+		private string _lengthCodeListEntityCode;
 
 		#endregion
 
+
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
 	}
 }

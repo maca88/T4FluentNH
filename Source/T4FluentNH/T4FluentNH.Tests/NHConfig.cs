@@ -7,10 +7,12 @@ using FluentNHibernate.Automapping;
 using FluentNHibernate.Cfg;
 using FluentNHibernate.Cfg.Db;
 using FluentNHibernate.Conventions.Helpers;
+using FluentNHibernate.Testing.Values;
 using NHibernate;
 using NHibernate.Cfg;
 using NHibernate.Tool.hbm2ddl;
 using T4FluentNH.Conventions;
+using T4FluentNH.Tests.External;
 
 namespace T4FluentNH.Tests
 {
@@ -18,7 +20,7 @@ namespace T4FluentNH.Tests
     {
         public override bool ShouldMap(Type type)
         {
-            return base.ShouldMap(type) && typeof(Entity).IsAssignableFrom(type);
+            return base.ShouldMap(type) && typeof(IEntity).IsAssignableFrom(type) && !new List<Type> { typeof(ExtTest) }.Contains(type);
         }
     }
 

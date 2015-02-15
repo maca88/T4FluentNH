@@ -19,7 +19,7 @@ namespace T4FluentNH.Tests
         {
             return GetType();
         }
-
+        /*
         public virtual bool Equals(object obj)
         {
             var compareTo = obj as Entity;
@@ -36,7 +36,7 @@ namespace T4FluentNH.Tests
                 return base.GetHashCode();
             return (GetType().GetHashCode() * 31) ^ Id.GetHashCode();
         }
-
+        */
         private bool HasSameNonDefaultIdAs(Entity compareTo)
         {
             return !IsTransient() && !compareTo.IsTransient() && Id.Equals(compareTo.Id);

@@ -13,9 +13,15 @@ namespace T4FluentNH.Tests.OneToMany
 
 		#region Cars
 
-		private ISet<T4FluentNH.Tests.OneToMany.O2MCar3> _cars;
+		private ISet<O2MCar3> _cars;
 
 		#endregion
 
+
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
 	}
 }

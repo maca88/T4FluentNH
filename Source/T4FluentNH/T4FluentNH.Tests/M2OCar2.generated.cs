@@ -11,5 +11,11 @@ namespace T4FluentNH.Tests.ManyToOne
 	public partial class M2OCar2
 	{
 
+
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
 	}
 }

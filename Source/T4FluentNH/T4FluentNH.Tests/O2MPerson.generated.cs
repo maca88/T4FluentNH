@@ -13,19 +13,25 @@ namespace T4FluentNH.Tests.OneToMany
 
 		#region Cars
 
-		private ISet<T4FluentNH.Tests.OneToMany.O2MCar> _cars;
+		private ISet<O2MCar> _cars;
 
-        public virtual void AddCar(T4FluentNH.Tests.OneToMany.O2MCar car)
+        public virtual void AddCar(O2MCar car)
         {
             this.AddOneToMany(o => o.Cars, car, o => o.Owner, o=> o.RemoveCar);
         }
 
-        public virtual void RemoveCar(T4FluentNH.Tests.OneToMany.O2MCar car)
+        public virtual void RemoveCar(O2MCar car)
         {
-            this.RemoveOneToMany(o => o.Cars, car, o => o.Owner);
+			this.RemoveOneToMany(o => o.Cars, car, o => o.Owner);
         }
 
 		#endregion
 
+
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
 	}
 }

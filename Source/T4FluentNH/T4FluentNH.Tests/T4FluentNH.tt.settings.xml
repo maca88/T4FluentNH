@@ -4,6 +4,7 @@
   <EntityTypes>
     <EntityType>
       <DerivedFromType>T4FluentNH.Tests.CodeList</DerivedFromType>
+      <IdentifierPropertyName>Code</IdentifierPropertyName>
       <IdentifierPropertyType>System.String</IdentifierPropertyType>
       <IdentifierLength>20</IdentifierLength>
       <CustomIdentifierLengths>
@@ -19,6 +20,7 @@
     </EntityType>
     <EntityType>
       <DerivedFromType>T4FluentNH.Tests.Entity</DerivedFromType>
+      <IdentifierPropertyName>Id</IdentifierPropertyName>
       <IdentifierPropertyType>System.Int32</IdentifierPropertyType>
       <KeyColumn>
         <Prefix></Prefix>
@@ -27,6 +29,7 @@
     </EntityType>
     <EntityType>
       <DerivedFromType>T4FluentNH.Domain.IUser</DerivedFromType>
+      <IdentifierPropertyName>Id</IdentifierPropertyName>
       <IdentifierPropertyType>System.Int32</IdentifierPropertyType>
       <KeyColumn>
         <Prefix></Prefix>

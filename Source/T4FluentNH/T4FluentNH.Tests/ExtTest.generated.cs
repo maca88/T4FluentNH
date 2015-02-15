@@ -13,10 +13,24 @@ namespace T4FluentNH.Tests.External
 
 		#region User
 
+        private T4FluentNH.Domain.IUser _user;
+
         [ReadOnly(true)]
-        public virtual int? UserId { get; set; }
+		public virtual int? UserId 
+		{ 
+			get { return _userId != default(int?) || User == null ? _userId : User.Id; } 
+			set { _userId = value; }
+		}
+
+		private int? _userId;
 
 		#endregion
 
+
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
 	}
 }

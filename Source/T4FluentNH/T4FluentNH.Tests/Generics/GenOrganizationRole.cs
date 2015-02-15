@@ -10,6 +10,6 @@ namespace T4FluentNH.Tests.Generics
     {
         public virtual TOrganization Organization { get; set; }
 
-        public virtual GenRole Role { get; set; }
+        public virtual GenRole Role { get { return _role; } set { SetField(ref _role, value, ref _roleId); } }
     }
 }

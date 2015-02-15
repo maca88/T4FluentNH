@@ -8,10 +8,10 @@ namespace T4FluentNH.Tests.OneToOne
         public virtual string Name { get; set; }
 
         [AsOneToOne] //cannot be unique
-        public virtual O2OPerson MarriedWith { get; set; }
+        public virtual O2OPerson MarriedWith { get { return _marriedWith; } set { SetField(ref _marriedWith, value, ref _marriedWithId); } }
 
         [AsOneToOne] //cannot be unique
-        public virtual O2OPerson Twin { get; set; }
+        public virtual O2OPerson Twin { get { return _twin; } set { SetField(ref _twin, value, ref _twinId); } }
 
     }
 }

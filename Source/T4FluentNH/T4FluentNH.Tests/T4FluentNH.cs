@@ -82,9 +82,8 @@ namespace FluentNHibernate.Automapping
             if (location.User != null)
                 location.User.RemoveLocation(location);
             location.User = this;
-            Locations.Add(location);*/
-
-
+            Locations.Add(location);
+            */
         }
 
         public static void RemoveOneToMany<TOne, TMany>(this TOne one,
@@ -105,7 +104,8 @@ namespace FluentNHibernate.Automapping
             /*
             if (!Locations.Contains(location)) return;
             Locations.Remove(location);
-            location.User = null;*/
+            location.User = null;
+            */
         }
 
         public static void SetManyToOne<TMany, TOne>(this TMany many,
@@ -124,12 +124,14 @@ namespace FluentNHibernate.Automapping
                 removeManyExpr.Compile()(one)(many);
             onePropInfo.SetValue(many, newOne);
             AddIfNotExist(manyList, many);
+
             /*
             if (User == user) return;
             if(User != null)
                 User.RemoveLocation(this);
             User = user;
-            AddIfNotExist(user.Locations, this);*/
+            AddIfNotExist(user.Locations, this);
+            */
         }
 
         public static void UnsetManyToOne<TMany, TOne>(this TMany many,
@@ -146,6 +148,33 @@ namespace FluentNHibernate.Automapping
             RemoveIfExist(manyList, many);
             onePropInfo.SetValue(many, null);
             /*
+            if(User == null) return;
+            RemoveIfExist(User.Locations, this);
+            User = null;*/
+        }
+
+        public static void UnsetManyToOne<TMany, TOne, TManySynth>(this TMany many,
+            Expression<Func<TMany, TOne>> oneExpr,
+            Expression<Func<TOne, IEnumerable<TMany>>> manyListExpr,
+            Expression<Func<TMany, TManySynth>> oneSynthExpr)
+            where TOne : T4FluentNH.Tests.IEntity
+            where TMany : T4FluentNH.Tests.IEntity
+        {
+            var one = oneExpr.Compile()(many);
+            var onePropInfo = GetPropertyInfo(many, oneExpr);
+            var manyList = (ICollection<TMany>)manyListExpr.Compile()(one);
+
+            if (oneSynthExpr != null)
+            {
+                var oneSynthPropInfo = GetPropertyInfo(many, oneSynthExpr);
+                oneSynthPropInfo.SetValue(many, GetDefault(oneSynthPropInfo.PropertyType)); //Reset synthetic prop
+            }
+
+            if (one == null) return;
+            RemoveIfExist(manyList, many);
+            onePropInfo.SetValue(many, null);
+            /*
+            UserId = default(TYPE)
             if(User == null) return;
             RemoveIfExist(User.Locations, this);
             User = null;*/
@@ -200,13 +229,14 @@ namespace FluentNHibernate.Automapping
             if (currentOne2 != null)
                 currentOne2.UnsetOneToOne(oneExpr, one2Expr);
             currentOne2PropInfo.SetValue(one, one2);
-
             /*
-             merryWith.MerriedWith = this;
-             MerriedWith = merryWith;
+             if(MerryWith.MerriedWith != null)
+               MerryWith.UnSet
+             MerryWith.MerriedWith = this;
+             if(MerryWith != null)
+               UnSet
+             MerriedWith = value;
              */
-
-
         }
 
         public static void UnsetOneToOne<TOne, TOne2>(this TOne one,
@@ -222,11 +252,22 @@ namespace FluentNHibernate.Automapping
             if (one2 == null) return;
             oneInOne2PropInfo.SetValue(one2, null);
             one2PropInfo.SetValue(one, null);
+
             /*
-            if (Dispozicija == null) return;
-            Dispozicija.DispozicijaRow = null;
-            Dispozicija = null;*/
-        }  
+            if (MerriedWith == null) return;
+            MerriedWith.MerriedWith = null;  
+            MerriedWith = null;
+             */
+        }
+
+        private static object GetDefault(Type type)
+        {
+            if (type.IsValueType)
+            {
+                return Activator.CreateInstance(type);
+            }
+            return null;
+        }
     }
 }
 

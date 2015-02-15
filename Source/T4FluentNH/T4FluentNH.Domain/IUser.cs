@@ -8,5 +8,6 @@ namespace T4FluentNH.Domain
 {
     public interface IUser
     {
+        int Id { get; set; }
     }
 }

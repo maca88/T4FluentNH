@@ -11,5 +11,11 @@ namespace T4FluentNH.Tests.EntityTypes
 	public partial class ETLengthCodeList
 	{
 
+
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
 	}
 }

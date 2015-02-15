@@ -390,6 +390,7 @@ foreach(var type in domainClasses.Values)
 
         //VSHelper.Warning(type.FullName + " - " + type.Name + " - " + type.CodeClass.Kind.ToString());
     }
+	 var entityType = settings.GetEntityType(VSHelper, type.CodeClass, true);
     
 	manager.StartNewFile(string.Format("{0}.generated.cs", fileName)); 
 #>
@@ -430,22 +431,35 @@ namespace <#=type.Namespace.FullName#>
             : relation.Property.Name;
 	    var externalType = settings.GetExternalType(relation.RelatedModelType);
 
-	    var useFullNs = relatedType != null && (type.Namespace.FullName != relatedType.Namespace.FullName ||
-	                    !knownNamespaces.Contains(relatedType.Namespace.FullName));
+	    var useFullNs = !(
+				relatedType != null &&
+				(
+					type.Namespace.FullName == relatedType.Namespace.FullName ||
+					knownNamespaces.Contains(relatedType.Namespace.FullName)
+				)
+			);
 	    var relatedTypeName = relatedType != null
 	        ? (useFullNs ? relatedType.FullName : relatedType.Name)
 	        : (useFullNs ? relation.RelatedModelType : relation.RelatedModelType.Split('.').Last());
 	    var syntheticPropRequired = relation.Property != null && 
             VSHelper.GetAttribute(relation.Property.Attributes, settings.NotNullAttribute) != null;
-	    var entityType = relatedType != null 
+	    var relatedEntityType = relatedType != null 
             ? settings.GetEntityType(VSHelper, relatedType.CodeClass, true)
             : settings.GetEntityType(externalType, true);
-	    var syntheticPropType = VSHelper.SimplifyTypeName(entityType.IdentifierPropertyType);
-        var syntheticPropValueType = VSHelper.IsValueType(entityType.IdentifierPropertyType);
+        var syntheticPropValueType = VSHelper.IsValueType(relatedEntityType.IdentifierPropertyType);
+		var syntheticPropType = VSHelper.SimplifyTypeName(relatedEntityType.IdentifierPropertyType);
+		if(!syntheticPropRequired && syntheticPropValueType)
+			syntheticPropType += "?";
 	    var syntheticPropName = !string.IsNullOrEmpty(relation.KeyColumn)
 	        ? relation.KeyColumn
-	        : entityType.KeyColumnPrefix + propName + entityType.KeyColumnPostfix;
-	    var syntheticPropLength = entityType.GetIdentifierLength(relation.RelatedModelType);
+	        : relatedEntityType.KeyColumnPrefix + propName + relatedEntityType.KeyColumnPostfix;
+	    var syntheticFieldName = VSHelper.GetFieldName(syntheticPropName);
+	    var syntheticPropLength = relatedEntityType.GetIdentifierLength(relation.RelatedModelType);
+
+		/*
+	    var relSynteticPropName = !string.IsNullOrEmpty(relation.PathInRelatedModel)
+	        ? entityType.KeyColumnPrefix + relation.PathInRelatedModel + entityType.KeyColumnPostfix
+	        : null;*/
 
 		var paramName = false //relation.Type == ModelRelationType.OneToMany || relation.Type == ModelRelationType.ManyToMany
 			? VSHelper.Pluralize(VSHelper.FirstCharToLower(propName))
@@ -455,6 +469,21 @@ namespace <#=type.Namespace.FullName#>
 	        paramName = "@" + paramName;
 		
 		var fieldName = VSHelper.GetFieldName(propName);
+
+	    if (settings.SyntheticProperties.Generate && 
+		type.MappedProperties.ContainsKey(propName) && relation.ListType == null)
+	    {
+	        var prop = type.MappedProperties[propName];
+	        var set = string.Format("{2}set {{ SetField(ref {0}, value, ref {1}); }}", fieldName, syntheticFieldName,
+	            (settings.Strict ? "protected internal " : ""));
+	        VSHelper.SetSetter(prop, set);
+	        VSHelper.SetGetter(prop, string.Format("get {{ return {0}; }}", fieldName));
+	    }
+	    else
+	    {
+			if(relatedType != null && !relatedType.MappedProperties.ContainsKey(propName))
+				Warning(relatedTypeName + " - " + propName + " Props: " + string.Join(", ", relatedType.MappedProperties.Keys));
+	    }
 
 	    var generateSyntheticProp = settings.SyntheticProperties.Generate && 
             VSHelper.GetInheritedProperties((CodeType) type.CodeClass).All(o => o.Name != syntheticPropName);
@@ -480,7 +509,7 @@ namespace <#=type.Namespace.FullName#>
 
         public virtual void Remove<#=VSHelper.Singularize(propName) #>(<#=relatedTypeName #> <#=paramName #>)
         {
-            this.RemoveOneToMany(o => o.<#=propName #>, <#=paramName #>, o => o.<#=relation.PathInRelatedModel #>);
+			this.RemoveOneToMany(o => o.<#=propName #>, <#=paramName #>, o => o.<#=relation.PathInRelatedModel #>);
         }
 <#
                 }
@@ -507,6 +536,10 @@ namespace <#=type.Namespace.FullName#>
 			case ModelRelationType.ManyToOne:
                 if (generateSyntheticProp)
                 {
+#>
+        private <#=relatedTypeName#> <#=fieldName#>;
+
+<#  
                     foreach (var attr in settings.SyntheticProperties.CustomAttributes)
                     {
 #>
@@ -525,9 +558,24 @@ namespace <#=type.Namespace.FullName#>
         [<#=settings.LengthAttribute#>(<#=syntheticPropLength#>)]
 <#
                     }
+					if(relation.Property == null)
+					{
 #>
-        public virtual <#=syntheticPropType#><#=(!syntheticPropRequired && syntheticPropValueType ? "?" : "")#> <#=syntheticPropName#> { get; <#=settings.Strict ? "protected " : ""#>set; }
-<#      
+        public virtual <#=syntheticPropType#> <#=syntheticPropName#> { get; <#=settings.Strict ? "protected " : ""#>set; }
+<#
+					}
+					else
+					{
+#>
+		public virtual <#=syntheticPropType#> <#=syntheticPropName#> 
+		{ 
+			get { return <#=syntheticFieldName#> != default(<#=syntheticPropType#>) || <#=propName#> == null ? <#=syntheticFieldName#> : <#=propName#>.<#=relatedEntityType.IdentifierPropertyName#>; } 
+			<#=settings.Strict ? "protected " : ""#>set { <#=syntheticFieldName#> = value; }
+		}
+
+		private <#=syntheticPropType#> <#=syntheticFieldName#>;
+<#
+					}    
                 }
                 if (relation.AssociationType == AssociationType.Bidirectional)
                 {
@@ -535,12 +583,12 @@ namespace <#=type.Namespace.FullName#>
 
         public virtual void Set<#=propName #>(<#=relatedTypeName #> <#=paramName #>)
         {
-            this.SetManyToOne(o => o.<#=propName #>, <#=paramName #>, o => o.Remove<#=VSHelper.Singularize(relation.PathInRelatedModel) #>, o => o.<#=relation.PathInRelatedModel #>);
+			this.SetManyToOne(o => o.<#=propName #>, <#=paramName #>, o => o.Remove<#=VSHelper.Singularize(relation.PathInRelatedModel) #>, o => o.<#=relation.PathInRelatedModel #>);
         }
 
         public virtual void Unset<#=propName #>()
         {
-            this.UnsetManyToOne(o => o.<#=propName #>, o => o.<#=relation.PathInRelatedModel #>);
+			this.UnsetManyToOne(o => o.<#=propName #>, o => o.<#=relation.PathInRelatedModel #>);
         }
 <#
                 }
@@ -548,6 +596,10 @@ namespace <#=type.Namespace.FullName#>
 			case ModelRelationType.OneToOne:
                 if (generateSyntheticProp)
                 {
+#>
+        private <#=relatedTypeName#> <#=fieldName#>;
+
+<#  
                     foreach (var attr in settings.SyntheticProperties.CustomAttributes)
                     {
 #>
@@ -566,9 +618,24 @@ namespace <#=type.Namespace.FullName#>
         [<#=settings.LengthAttribute#>(<#=syntheticPropLength#>)]
 <#
                     }
+					if(relation.Property == null)
+					{
 #>
-        public virtual <#=syntheticPropType#><#=(!syntheticPropRequired && syntheticPropValueType ? "?" : "")#> <#=syntheticPropName#> { get; <#=settings.Strict ? "protected " : ""#>set; }
-<#      
+        public virtual <#=syntheticPropType#> <#=syntheticPropName#> { get; <#=settings.Strict ? "protected " : ""#>set; }
+<#
+					}
+					else
+					{
+#>
+		public virtual <#=syntheticPropType#> <#=syntheticPropName#> 
+		{ 
+			get { return <#=syntheticFieldName#> != default(<#=syntheticPropType#>) || <#=propName#> == null ? <#=syntheticFieldName#> : <#=propName#>.<#=relatedEntityType.IdentifierPropertyName#>; } 
+			<#=settings.Strict ? "protected " : ""#>set { <#=syntheticFieldName#> = value; }
+		}
+
+		private <#=syntheticPropType#> <#=syntheticFieldName#>;
+<#
+					}    
                 }
                 if (relation.AssociationType == AssociationType.Bidirectional)
                 {
@@ -576,12 +643,12 @@ namespace <#=type.Namespace.FullName#>
 
 		public virtual void Set<#=propName #>(<#=relatedTypeName #> <#=paramName #>)
         {
-            this.SetOneToOne(o => o.<#=propName #>, <#=paramName #>, o => o.<#=relation.PathInRelatedModel #>);
+			this.SetOneToOne(o => o.<#=propName #>, <#=paramName #>, o => o.<#=relation.PathInRelatedModel #>);
         }
 
         public virtual void Unset<#=propName #>()
         {
-            this.UnsetOneToOne(o => o.<#=propName #>, o => o.<#=relation.PathInRelatedModel #>);
+			this.UnsetOneToOne(o => o.<#=propName #>, o => o.<#=relation.PathInRelatedModel #>);
         }	
 <#
                 }
@@ -593,6 +660,17 @@ namespace <#=type.Namespace.FullName#>
 
 <#
 	}
+    if (settings.SyntheticProperties.Generate)
+    {
+#>
+
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
+<#  
+    }
 #>
 	}
 }
@@ -648,8 +726,8 @@ namespace FluentNHibernate.Automapping
             Expression<Func<TOne, IEnumerable<TMany>>> manyListExpr, TMany many,
             Expression<Func<TMany, TOne>> oneExpr,
             Expression<Func<TOne, Action<TMany>>> removeManyExpr)
-            where TOne : <#=settings.BaseEntityType#>
-            where TMany : <#=settings.BaseEntityType#>
+            where TOne : T4FluentNH.Tests.IEntity
+            where TMany : T4FluentNH.Tests.IEntity
         {
             var enumerable = manyListExpr.Compile()(one);
             var collection = (ICollection<TMany>)enumerable;
@@ -667,17 +745,16 @@ namespace FluentNHibernate.Automapping
             if (location.User != null)
                 location.User.RemoveLocation(location);
             location.User = this;
-            Locations.Add(location);*/
-
-
+            Locations.Add(location);
+            */
         }
 
         public static void RemoveOneToMany<TOne, TMany>(this TOne one,
             Expression<Func<TOne, IEnumerable<TMany>>> manyListExpr, TMany many,
             Expression<Func<TMany, TOne>> entityExpr
             )
-            where TOne : <#=settings.BaseEntityType#>
-            where TMany : <#=settings.BaseEntityType#>
+            where TOne : T4FluentNH.Tests.IEntity
+            where TMany : T4FluentNH.Tests.IEntity
         {
             var enumerable = manyListExpr.Compile()(one);
             var collection = (ICollection<TMany>)enumerable;
@@ -690,15 +767,16 @@ namespace FluentNHibernate.Automapping
             /*
             if (!Locations.Contains(location)) return;
             Locations.Remove(location);
-            location.User = null;*/
+            location.User = null;
+            */
         }
 
         public static void SetManyToOne<TMany, TOne>(this TMany many,
             Expression<Func<TMany, TOne>> oneExpr, TOne newOne,
             Expression<Func<TOne, Action<TMany>>> removeManyExpr,
             Expression<Func<TOne, IEnumerable<TMany>>> manyExp)
-            where TOne : <#=settings.BaseEntityType#>
-            where TMany : <#=settings.BaseEntityType#>
+            where TOne : T4FluentNH.Tests.IEntity
+            where TMany : T4FluentNH.Tests.IEntity
         {
             var one = oneExpr.Compile()(many);
             var onePropInfo = GetPropertyInfo(many, oneExpr);
@@ -709,19 +787,21 @@ namespace FluentNHibernate.Automapping
                 removeManyExpr.Compile()(one)(many);
             onePropInfo.SetValue(many, newOne);
             AddIfNotExist(manyList, many);
+
             /*
             if (User == user) return;
             if(User != null)
                 User.RemoveLocation(this);
             User = user;
-            AddIfNotExist(user.Locations, this);*/
+            AddIfNotExist(user.Locations, this);
+            */
         }
 
         public static void UnsetManyToOne<TMany, TOne>(this TMany many,
             Expression<Func<TMany, TOne>> oneExpr,
             Expression<Func<TOne, IEnumerable<TMany>>> manyListExpr)
-            where TOne : <#=settings.BaseEntityType#>
-            where TMany : <#=settings.BaseEntityType#>
+            where TOne : T4FluentNH.Tests.IEntity
+            where TMany : T4FluentNH.Tests.IEntity
         {
             var one = oneExpr.Compile()(many);
             var onePropInfo = GetPropertyInfo(many, oneExpr);
@@ -736,11 +816,38 @@ namespace FluentNHibernate.Automapping
             User = null;*/
         }
 
+        public static void UnsetManyToOne<TMany, TOne, TManySynth>(this TMany many,
+            Expression<Func<TMany, TOne>> oneExpr,
+            Expression<Func<TOne, IEnumerable<TMany>>> manyListExpr,
+            Expression<Func<TMany, TManySynth>> oneSynthExpr)
+            where TOne : T4FluentNH.Tests.IEntity
+            where TMany : T4FluentNH.Tests.IEntity
+        {
+            var one = oneExpr.Compile()(many);
+            var onePropInfo = GetPropertyInfo(many, oneExpr);
+            var manyList = (ICollection<TMany>)manyListExpr.Compile()(one);
+
+            if (oneSynthExpr != null)
+            {
+                var oneSynthPropInfo = GetPropertyInfo(many, oneSynthExpr);
+                oneSynthPropInfo.SetValue(many, GetDefault(oneSynthPropInfo.PropertyType)); //Reset synthetic prop
+            }
+
+            if (one == null) return;
+            RemoveIfExist(manyList, many);
+            onePropInfo.SetValue(many, null);
+            /*
+            UserId = default(TYPE)
+            if(User == null) return;
+            RemoveIfExist(User.Locations, this);
+            User = null;*/
+        }
+
         public static void AddManyToMany<TMany, TMany2>(this TMany many,
             Expression<Func<TMany, IEnumerable<TMany2>>> many2ListExpr, TMany2 many2,
             Expression<Func<TMany2, IEnumerable<TMany>>> manyListExpr)
-            where TMany : <#=settings.BaseEntityType#>
-            where TMany2 : <#=settings.BaseEntityType#>
+            where TMany : T4FluentNH.Tests.IEntity
+            where TMany2 : T4FluentNH.Tests.IEntity
         {
             var many2List = (ICollection<TMany2>)many2ListExpr.Compile()(many);
             var manyList = (ICollection<TMany>)manyListExpr.Compile()(many2);
@@ -755,8 +862,8 @@ namespace FluentNHibernate.Automapping
         public static void RemoveManyToMany<TMany, TMany2>(this TMany many,
             Expression<Func<TMany, IEnumerable<TMany2>>> many2ListExpr, TMany2 many2,
             Expression<Func<TMany2, IEnumerable<TMany>>> manyListExpr)
-            where TMany : <#=settings.BaseEntityType#>
-            where TMany2 : <#=settings.BaseEntityType#>
+            where TMany : T4FluentNH.Tests.IEntity
+            where TMany2 : T4FluentNH.Tests.IEntity
         {
             var many2List = (ICollection<TMany2>)many2ListExpr.Compile()(many);
             var manyList = (ICollection<TMany>)manyListExpr.Compile()(many2);
@@ -771,8 +878,8 @@ namespace FluentNHibernate.Automapping
         public static void SetOneToOne<TOne, TOne2>(this TOne one,
             Expression<Func<TOne, TOne2>> one2Expr, TOne2 one2,
             Expression<Func<TOne2, TOne>> oneExpr)
-            where TOne : <#=settings.BaseEntityType#>
-            where TOne2 : <#=settings.BaseEntityType#>
+            where TOne : T4FluentNH.Tests.IEntity
+            where TOne2 : T4FluentNH.Tests.IEntity
         {
             var oneInOne2 = oneExpr.Compile()(one2);
             var oneInOne2PropInfo = GetPropertyInfo(one2, oneExpr);
@@ -785,20 +892,21 @@ namespace FluentNHibernate.Automapping
             if (currentOne2 != null)
                 currentOne2.UnsetOneToOne(oneExpr, one2Expr);
             currentOne2PropInfo.SetValue(one, one2);
-
             /*
-             merryWith.MerriedWith = this;
-             MerriedWith = merryWith;
+             if(MerryWith.MerriedWith != null)
+               MerryWith.UnSet
+             MerryWith.MerriedWith = this;
+             if(MerryWith != null)
+               UnSet
+             MerriedWith = value;
              */
-
-
         }
 
         public static void UnsetOneToOne<TOne, TOne2>(this TOne one,
             Expression<Func<TOne, TOne2>> one2Expr,
             Expression<Func<TOne2, TOne>> oneExpr)
-            where TOne : <#=settings.BaseEntityType#>
-            where TOne2 : <#=settings.BaseEntityType#>
+            where TOne : T4FluentNH.Tests.IEntity
+            where TOne2 : T4FluentNH.Tests.IEntity
         {
             var one2 = one2Expr.Compile()(one);
             var one2PropInfo = GetPropertyInfo(one, one2Expr);
@@ -807,11 +915,22 @@ namespace FluentNHibernate.Automapping
             if (one2 == null) return;
             oneInOne2PropInfo.SetValue(one2, null);
             one2PropInfo.SetValue(one, null);
+
             /*
-            if (Dispozicija == null) return;
-            Dispozicija.DispozicijaRow = null;
-            Dispozicija = null;*/
-        }  
+            if (MerriedWith == null) return;
+            MerriedWith.MerriedWith = null;  
+            MerriedWith = null;
+             */
+        }
+
+        private static object GetDefault(Type type)
+        {
+            if (type.IsValueType)
+            {
+                return Activator.CreateInstance(type);
+            }
+            return null;
+        }
     }
 }
 
@@ -1031,7 +1150,7 @@ public class DomainModelWrapper
                     if (p.Type.AsFullName != FullName) continue;
                     if (one && 
                         (
-                            //by default convenction one to one is not generated
+                            //by default convention one to one is not generated
                             VSHelper.GetAttribute(prop.Attributes, "T4FluentNH.Attributes.AsOneToOneAttribute") == null ||
                             //property must be the same when one to one is defined on the same type
                             (typeFullName == FullName && p.Name != prop.Name)
@@ -1040,7 +1159,7 @@ public class DomainModelWrapper
                     {
                         continue;
                     }
-                    
+
                     //VSHelper.Warning(cls.Name +  " " + p.Name  + " " + typeFullName + " " + (one ?  "OO" : "MO"));
                     return new ModelRelation
                     {
@@ -1057,7 +1176,7 @@ public class DomainModelWrapper
 
 
         //Unidirectional association - By default unidirectional associations are oneToMany and manyToOne
-
+		//VSHelper.Warning(typeFullName +  " " + prop.Name  + " " + (one ?  "MO" : "MM"));
         //manyToOne
 	    if (one)
 	    {
@@ -1073,7 +1192,7 @@ public class DomainModelWrapper
 	    }
 
         //oneToMany - in this case we have to add two relations for both sides
-
+		/*
 	    AddGlobalModelRelation(typeFullName, new ModelRelation
 	    {
 	        Type = ModelRelationType.ManyToOne,
@@ -1082,7 +1201,7 @@ public class DomainModelWrapper
 	        Property = null,
 	        PathInRelatedModel = prop.Name,
 	        AssociationType = AssociationType.Unidirectional
-	    });
+	    });*/
 
 	    return new ModelRelation
 	    {
@@ -1188,6 +1307,8 @@ public class DomainModelWrapper
 
         public string IdentifierPropertyType { get; set; }
 
+		public string IdentifierPropertyName { get; set; }
+
         public string IdentifierLength { get; set; }
 
         public Dictionary<string,string> CustomIdentifierLengths { get; set; }
@@ -1251,6 +1372,7 @@ public class DomainModelWrapper
                     KeyColumnPrefix = o.XPathSelectElement("KeyColumn/Prefix").Value,
                     KeyColumnPostfix = o.XPathSelectElement("KeyColumn/Postfix").Value,
                     IdentifierPropertyType = o.XPathSelectElement("IdentifierPropertyType").Value,
+					IdentifierPropertyName = o.XPathSelectElement("IdentifierPropertyName").Value,
                     IdentifierLength = o.XPathSelectElement("IdentifierLength") != null 
                         ? o.XPathSelectElement("IdentifierLength").Value
                         : null,

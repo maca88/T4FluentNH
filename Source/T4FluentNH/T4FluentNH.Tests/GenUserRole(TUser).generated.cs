@@ -13,10 +13,24 @@ namespace T4FluentNH.Tests.Generics
 
 		#region Role
 
+        private GenRole _role;
+
         [ReadOnly(true)]
-        public virtual int? RoleId { get; set; }
+		public virtual int? RoleId 
+		{ 
+			get { return _roleId != default(int?) || Role == null ? _roleId : Role.Id; } 
+			set { _roleId = value; }
+		}
+
+		private int? _roleId;
 
 		#endregion
 
+
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
 	}
 }

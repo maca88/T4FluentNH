@@ -232,6 +232,7 @@
     <Compile Include="Switch.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
+    <Compile Include="SyntheticPropertyTests.cs" />
     <Compile Include="T4FluentNH.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

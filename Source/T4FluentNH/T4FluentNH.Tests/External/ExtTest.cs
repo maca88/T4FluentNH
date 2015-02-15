@@ -9,7 +9,7 @@ namespace T4FluentNH.Tests.External
 {
     public partial class ExtTest : Entity
     {
-        public virtual IUser User { get; set; }
+        public virtual IUser User { get { return _user; } set { SetField(ref _user, value, ref _userId); } }
 
     }
 }

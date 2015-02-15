@@ -13,37 +13,59 @@ namespace T4FluentNH.Tests.OneToOne
 
 		#region MarriedWith
 
-        [ReadOnly(true)]
-        public virtual int? MarriedWithId { get; set; }
+        private O2OPerson _marriedWith;
 
-		public virtual void SetMarriedWith(T4FluentNH.Tests.OneToOne.O2OPerson marriedWith)
+        [ReadOnly(true)]
+		public virtual int? MarriedWithId 
+		{ 
+			get { return _marriedWithId != default(int?) || MarriedWith == null ? _marriedWithId : MarriedWith.Id; } 
+			set { _marriedWithId = value; }
+		}
+
+		private int? _marriedWithId;
+
+		public virtual void SetMarriedWith(O2OPerson marriedWith)
         {
-            this.SetOneToOne(o => o.MarriedWith, marriedWith, o => o.MarriedWith);
+			this.SetOneToOne(o => o.MarriedWith, marriedWith, o => o.MarriedWith);
         }
 
         public virtual void UnsetMarriedWith()
         {
-            this.UnsetOneToOne(o => o.MarriedWith, o => o.MarriedWith);
+			this.UnsetOneToOne(o => o.MarriedWith, o => o.MarriedWith);
         }	
 
 		#endregion
 
 		#region Twin
 
-        [ReadOnly(true)]
-        public virtual int? TwinId { get; set; }
+        private O2OPerson _twin;
 
-		public virtual void SetTwin(T4FluentNH.Tests.OneToOne.O2OPerson twin)
+        [ReadOnly(true)]
+		public virtual int? TwinId 
+		{ 
+			get { return _twinId != default(int?) || Twin == null ? _twinId : Twin.Id; } 
+			set { _twinId = value; }
+		}
+
+		private int? _twinId;
+
+		public virtual void SetTwin(O2OPerson twin)
         {
-            this.SetOneToOne(o => o.Twin, twin, o => o.Twin);
+			this.SetOneToOne(o => o.Twin, twin, o => o.Twin);
         }
 
         public virtual void UnsetTwin()
         {
-            this.UnsetOneToOne(o => o.Twin, o => o.Twin);
+			this.UnsetOneToOne(o => o.Twin, o => o.Twin);
         }	
 
 		#endregion
 
+
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
 	}
 }

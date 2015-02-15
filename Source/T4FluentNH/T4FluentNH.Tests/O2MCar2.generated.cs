@@ -11,12 +11,11 @@ namespace T4FluentNH.Tests.OneToMany
 	public partial class O2MCar2
 	{
 
-		#region O2MCar2
 
-        [ReadOnly(true)]
-        public virtual int? O2MCar2Id { get; set; }
-
-		#endregion
-
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
 	}
 }

@@ -13,20 +13,34 @@ namespace T4FluentNH.Tests.OneToOne
 
 		#region IdentityCard
 
-        [ReadOnly(true)]
-        public virtual int? IdentityCardId { get; set; }
+        private O2OIdentityCard3 _identityCard;
 
-		public virtual void SetIdentityCard(T4FluentNH.Tests.OneToOne.O2OIdentityCard3 identityCard)
+        [ReadOnly(true)]
+		public virtual int? IdentityCardId 
+		{ 
+			get { return _identityCardId != default(int?) || IdentityCard == null ? _identityCardId : IdentityCard.Id; } 
+			set { _identityCardId = value; }
+		}
+
+		private int? _identityCardId;
+
+		public virtual void SetIdentityCard(O2OIdentityCard3 identityCard)
         {
-            this.SetOneToOne(o => o.IdentityCard, identityCard, o => o.Owner);
+			this.SetOneToOne(o => o.IdentityCard, identityCard, o => o.Owner);
         }
 
         public virtual void UnsetIdentityCard()
         {
-            this.UnsetOneToOne(o => o.IdentityCard, o => o.Owner);
+			this.UnsetOneToOne(o => o.IdentityCard, o => o.Owner);
         }	
 
 		#endregion
 
+
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
 	}
 }

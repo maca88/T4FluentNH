@@ -1,11 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace T4FluentNH.Extensions
 {
     internal static class ExpressionExtensions
     {
+        public static void SetPropertyValue<T>(this T target, Expression<Func<T, object>> memberLamda, object value)
+        {
+            var memberSelectorExpression = memberLamda.Body as MemberExpression;
+            if (memberSelectorExpression != null)
+            {
+                var property = memberSelectorExpression.Member as PropertyInfo;
+                if (property != null)
+                {
+                    property.SetValue(target, value, null);
+                }
+            }
+        }
+
         public static string GetFullPropertyName<T, TProperty>(this Expression<Func<T, TProperty>> exp)
         {
             MemberExpression memberExp;

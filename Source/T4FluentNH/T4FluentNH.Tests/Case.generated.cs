@@ -13,20 +13,34 @@ namespace T4FluentNH.Tests.Naming
 
 		#region Switch
 
-        [ReadOnly(true)]
-        public virtual int? SwitchId { get; set; }
+        private Switch _switch;
 
-		public virtual void SetSwitch(T4FluentNH.Tests.Naming.Switch @switch)
+        [ReadOnly(true)]
+		public virtual int? SwitchId 
+		{ 
+			get { return _switchId != default(int?) || Switch == null ? _switchId : Switch.Id; } 
+			set { _switchId = value; }
+		}
+
+		private int? _switchId;
+
+		public virtual void SetSwitch(Switch @switch)
         {
-            this.SetOneToOne(o => o.Switch, @switch, o => o.Case);
+			this.SetOneToOne(o => o.Switch, @switch, o => o.Case);
         }
 
         public virtual void UnsetSwitch()
         {
-            this.UnsetOneToOne(o => o.Switch, o => o.Case);
+			this.UnsetOneToOne(o => o.Switch, o => o.Case);
         }	
 
 		#endregion
 
+
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
 	}
 }

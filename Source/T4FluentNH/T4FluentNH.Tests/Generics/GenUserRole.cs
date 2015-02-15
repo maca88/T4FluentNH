@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace T4FluentNH.Tests.Generics
 {
-    public partial class GenUserRole<TUser> : Entity
+    public abstract partial class GenUserRole<TUser> : Entity
     {
         public virtual TUser User { get; set; }
 
-        public virtual GenRole Role { get; set; }
+        public virtual GenRole Role { get { return _role; } set { SetField(ref _role, value, ref _roleId); } }
     }
 }

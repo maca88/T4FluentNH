@@ -11,7 +11,8 @@ namespace T4FluentNH.Tests.ManyToOne
         public virtual string Name { get; set; }
 
         //Unidirectional association
-        public virtual M2OCar2 Car { get; set; }
+        public virtual M2OCar2 Car { get { return _car; } set { SetField(ref _car, value, ref _carId); } }
+
     }
 
 

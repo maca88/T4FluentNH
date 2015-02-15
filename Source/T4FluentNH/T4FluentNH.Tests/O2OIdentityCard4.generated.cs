@@ -13,20 +13,34 @@ namespace T4FluentNH.Tests.OneToOne
 
 		#region Owner
 
-        [ReadOnly(true)]
-        public virtual int? OwnerId { get; set; }
+        private O2OPerson4 _owner;
 
-		public virtual void SetOwner(T4FluentNH.Tests.OneToOne.O2OPerson4 owner)
+        [ReadOnly(true)]
+		public virtual int? OwnerId 
+		{ 
+			get { return _ownerId != default(int?) || Owner == null ? _ownerId : Owner.Id; } 
+			set { _ownerId = value; }
+		}
+
+		private int? _ownerId;
+
+		public virtual void SetOwner(O2OPerson4 owner)
         {
-            this.SetOneToOne(o => o.Owner, owner, o => o.IdentityCard);
+			this.SetOneToOne(o => o.Owner, owner, o => o.IdentityCard);
         }
 
         public virtual void UnsetOwner()
         {
-            this.UnsetOneToOne(o => o.Owner, o => o.IdentityCard);
+			this.UnsetOneToOne(o => o.Owner, o => o.IdentityCard);
         }	
 
 		#endregion
 
+
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
 	}
 }

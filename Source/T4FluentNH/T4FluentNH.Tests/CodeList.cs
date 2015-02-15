@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace T4FluentNH.Tests
 {
-    public partial class CodeList : IEntity
+    public abstract partial class CodeList : IEntity
     {
         public virtual string Code { get; set; }
     }

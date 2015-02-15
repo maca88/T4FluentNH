@@ -13,20 +13,34 @@ namespace T4FluentNH.Tests.Naming
 
 		#region Case
 
-        [ReadOnly(true)]
-        public virtual int? CaseId { get; set; }
+        private Case _case;
 
-		public virtual void SetCase(T4FluentNH.Tests.Naming.Case @case)
+        [ReadOnly(true)]
+		public virtual int? CaseId 
+		{ 
+			get { return _caseId != default(int?) || Case == null ? _caseId : Case.Id; } 
+			set { _caseId = value; }
+		}
+
+		private int? _caseId;
+
+		public virtual void SetCase(Case @case)
         {
-            this.SetOneToOne(o => o.Case, @case, o => o.Switch);
+			this.SetOneToOne(o => o.Case, @case, o => o.Switch);
         }
 
         public virtual void UnsetCase()
         {
-            this.UnsetOneToOne(o => o.Case, o => o.Switch);
+			this.UnsetOneToOne(o => o.Case, o => o.Switch);
         }	
 
 		#endregion
 
+
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
 	}
 }

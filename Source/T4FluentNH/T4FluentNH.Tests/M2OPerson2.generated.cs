@@ -13,10 +13,24 @@ namespace T4FluentNH.Tests.ManyToOne
 
 		#region Car
 
+        private M2OCar2 _car;
+
         [ReadOnly(true)]
-        public virtual int? CarId { get; set; }
+		public virtual int? CarId 
+		{ 
+			get { return _carId != default(int?) || Car == null ? _carId : Car.Id; } 
+			set { _carId = value; }
+		}
+
+		private int? _carId;
 
 		#endregion
 
+
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
 	}
 }

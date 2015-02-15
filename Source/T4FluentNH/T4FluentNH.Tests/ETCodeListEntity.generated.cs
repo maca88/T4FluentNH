@@ -13,10 +13,24 @@ namespace T4FluentNH.Tests.EntityTypes
 
 		#region SimpleEntity
 
+        private ETSimpleEntity _simpleEntity;
+
         [ReadOnly(true)]
-        public virtual int? SimpleEntityId { get; set; }
+		public virtual int? SimpleEntityId 
+		{ 
+			get { return _simpleEntityId != default(int?) || SimpleEntity == null ? _simpleEntityId : SimpleEntity.Id; } 
+			set { _simpleEntityId = value; }
+		}
+
+		private int? _simpleEntityId;
 
 		#endregion
 
+
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
 	}
 }

@@ -14,17 +14,23 @@ namespace T4FluentNH.Tests.ManyToMany
 		#region Users
 
 		private ISet<M2MUser> _users;
-        public virtual void AddUser(T4FluentNH.Tests.ManyToMany.M2MUser user)
+        public virtual void AddUser(M2MUser user)
         {
             this.AddManyToMany(o => o.Users, user, o => o.Roles);
         }
 
-        public virtual void RemoveUser(T4FluentNH.Tests.ManyToMany.M2MUser user)
+        public virtual void RemoveUser(M2MUser user)
         {
             this.RemoveManyToMany(o => o.Users, user, o => o.Roles);
         }
 
 		#endregion
 
+
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
 	}
 }

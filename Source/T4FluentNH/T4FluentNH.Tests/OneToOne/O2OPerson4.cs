@@ -8,7 +8,7 @@ namespace T4FluentNH.Tests.OneToOne
    
         public virtual string Name { get; set; } 
 
-        public virtual O2OIdentityCard4 IdentityCard { get; set; }
+        public virtual O2OIdentityCard4 IdentityCard { get { return _identityCard; } set { SetField(ref _identityCard, value, ref _identityCardId); } }
     }
 
     public class O2OPerson4Mapping : IAutoMappingOverride<O2OPerson4>
@@ -26,6 +26,6 @@ namespace T4FluentNH.Tests.OneToOne
     {
         public virtual string Code { get; set; }
 
-        public virtual O2OPerson4 Owner { get; set; }
+        public virtual O2OPerson4 Owner { get { return _owner; } set { SetField(ref _owner, value, ref _ownerId); } }
     }
 }

@@ -13,10 +13,18 @@ namespace T4FluentNH.Tests.OneToMany
 
 		#region O2MCar3
 
+        private O2MPerson3 _o2MCar3;
+
         [ReadOnly(true)]
         public virtual int? OwnerId { get; set; }
 
 		#endregion
 
+
+		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+        {
+            field = vatue;
+            synthField = default(TSynth);
+        }
 	}
 }
