@@ -15,11 +15,6 @@ namespace T4FluentNH.Tests.Inheritance
 
 		private ISet<Dog> _dogs;
 
-        public virtual void AddDog(Dog dog)
-        {
-            this.AddOneToMany(o => o.Dogs, dog, o => o.Owner, o=> o.RemoveDog);
-        }
-
         public virtual void RemoveDog(Dog dog)
         {
 			this.RemoveOneToMany(o => o.Dogs, dog, o => o.Owner);
@@ -34,11 +29,6 @@ namespace T4FluentNH.Tests.Inheritance
         public virtual void AddCat(Cat cat)
         {
             this.AddOneToMany(o => o.Cats, cat, o => o.Owner, o=> o.RemoveCat);
-        }
-
-        public virtual void RemoveCat(Cat cat)
-        {
-			this.RemoveOneToMany(o => o.Cats, cat, o => o.Owner);
         }
 
 		#endregion

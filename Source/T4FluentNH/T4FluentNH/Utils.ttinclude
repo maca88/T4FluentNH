@@ -606,12 +606,41 @@ public class VisualStudioHelper : AutomationHelper
         return props;
 	}
 
-	public IEnumerable<CodeFunction2> GetMethods(CodeClass2 codeClass)
+	public IEnumerable<CodeFunction2> GetMethods(CodeClass2 codeClass, bool includeInherited = false)
 	{
 		// Only look at regular method (e.g. ignore things like contructors)
-		return codeClass.Members.OfType<CodeFunction2>()
+		var methods = codeClass.Members.OfType<CodeFunction2>()
 			.Where(f => f.FunctionKind == vsCMFunction.vsCMFunctionFunction);
+	    if (includeInherited)
+	        methods = methods.Union(GetInheritedMethods((CodeType) codeClass));
+	    return methods;
 	}
+
+	public IEnumerable<CodeFunction2> GetInheritedMethods(CodeType element)
+    {
+        // If it's a local code element, we may be able to enumerate all its partial classes
+        if (element.InfoLocation == vsCMInfoLocation.vsCMInfoLocationProject)
+        {
+            var codeClass2 = element as CodeClass2;
+            if (codeClass2 != null)
+            {
+                var memberDict = new Dictionary<string, CodeElement>();
+                foreach (var partialClass in codeClass2.PartialClasses.OfType<CodeType>())
+                {
+                    if (GetAttribute(partialClass.Attributes, "System.CodeDom.Compiler.GeneratedCodeAttribute") != null)
+                        continue;
+                    var baseMembers = partialClass.Bases.OfType<CodeType>().SelectMany(x => VisibleMembers(x).OfType<CodeElement>());
+                    
+                    // Ensure we only have one entry per name from all the bases
+                    foreach (var baseMember in baseMembers) {
+                        memberDict[baseMember.Name] = baseMember;
+                    }
+                }
+                return memberDict.Values.OfType<CodeFunction2>();
+            }
+        }
+        return new List<CodeFunction2>();
+    }
 
 	public IEnumerable<CodeFunction2> GetActionResultMethods(CodeClass2 codeClass)
 	{
@@ -649,9 +678,9 @@ public class VisualStudioHelper : AutomationHelper
 		return methods;
 	}
 
-	public CodeFunction2 GetMethod(CodeClass2 codeClass, string name)
+	public CodeFunction2 GetMethod(CodeClass2 codeClass, string name, bool allowInherited = false)
 	{
-		return GetMethods(codeClass).FirstOrDefault(f => f.Name == name);
+		return GetMethods(codeClass, allowInherited).FirstOrDefault(f => f.Name == name);
 	}
 
     public string GetAttributeArgumentValue(CodeAttribute2 attribute, string argumentName)

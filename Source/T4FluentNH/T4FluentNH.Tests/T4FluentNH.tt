@@ -433,18 +433,26 @@ namespace <#=type.Namespace.FullName#>
 <#
                 if (relation.AssociationType == AssociationType.Bidirectional)
                 {
+                    if (!oneToManyRelation.ExistsAddMethod)
+                    {
 #>
 
-        public virtual void <#=oneToManyRelation.AddMethodName#>(<#=oneToManyRelation.RelatedModelTypeName#> <#=oneToManyRelation.ParameterName#>)
+        public virtual void <#=oneToManyRelation.AddMethodName #>(<#=oneToManyRelation.RelatedModelTypeName #> <#=oneToManyRelation.ParameterName #>)
         {
-            this.AddOneToMany(o => o.<#=relation.PropertyName #>, <#=oneToManyRelation.ParameterName #>, o => o.<#=relation.PathInRelatedModel #>, o=> o.<#=oneToManyRelation.RemoveMethodName#>);
+            this.AddOneToMany(o => o.<#=relation.PropertyName #>, <#=oneToManyRelation.ParameterName #>, o => o.<#=relation.PathInRelatedModel #>, o=> o.<#=oneToManyRelation.RemoveMethodName #>);
         }
+<#
+                    }
+					if (!oneToManyRelation.ExistsRemoveMethod)
+					{
+#>
 
-        public virtual void <#=oneToManyRelation.RemoveMethodName#>(<#=oneToManyRelation.RelatedModelTypeName#> <#=oneToManyRelation.ParameterName#>)
+        public virtual void <#=oneToManyRelation.RemoveMethodName #>(<#=oneToManyRelation.RelatedModelTypeName #> <#=oneToManyRelation.ParameterName #>)
         {
 			this.RemoveOneToMany(o => o.<#=relation.PropertyName #>, <#=oneToManyRelation.ParameterName #>, o => o.<#=relation.PathInRelatedModel #>);
         }
 <#
+					}
                 }
                 break;
 			case ModelRelationType.ManyToMany:
@@ -454,17 +462,25 @@ namespace <#=type.Namespace.FullName#>
 <#
                 if (relation.AssociationType == AssociationType.Bidirectional)
                 {
+                    if (!manyToManyRelation.ExistsAddMethod)
+                    {
 #>
         public virtual void <#=manyToManyRelation.AddMethodName#>(<#=manyToManyRelation.RelatedModelTypeName#> <#=manyToManyRelation.ParameterName#>)
         {
             this.AddManyToMany(o => o.<#=relation.PropertyName #>, <#=manyToManyRelation.ParameterName #>, o => o.<#=relation.PathInRelatedModel #>);
         }
+<#
+                    }
+					if (!manyToManyRelation.ExistsRemoveMethod)
+					{
+#>
 
-        public virtual void <#=manyToManyRelation.RemoveMethodName#>(<#=manyToManyRelation.RelatedModelTypeName#> <#=manyToManyRelation.ParameterName#>)
+        public virtual void <#=manyToManyRelation.RemoveMethodName #>(<#=manyToManyRelation.RelatedModelTypeName #> <#=manyToManyRelation.ParameterName #>)
         {
             this.RemoveManyToMany(o => o.<#=relation.PropertyName #>, <#=manyToManyRelation.ParameterName #>, o => o.<#=relation.PathInRelatedModel #>);
         }
-<# 
+<#
+					}
                 }
                 break;
 			case ModelRelationType.ManyToOne:
@@ -514,18 +530,26 @@ namespace <#=type.Namespace.FullName#>
                 }
                 if (relation.AssociationType == AssociationType.Bidirectional)
                 {
+					if(!manyToOneRelation.ExistsSetMethod)
+					{
 #>
 
         public virtual void <#=manyToOneRelation.SetMethodName #>(<#=manyToOneRelation.RelatedModelTypeName #> <#=manyToOneRelation.ParameterName #>)
         {
 			this.SetManyToOne(o => o.<#=manyToOneRelation.PropertyName #>, <#=manyToOneRelation.ParameterName #>, o => o.<#=manyToOneRelation.RelatedTypeRemoveMethodName#>, o => o.<#=relation.PathInRelatedModel #>);
         }
+<#
+                    }
+					if (!manyToOneRelation.ExistsUnsetMethod)
+					{
+#>
 
         public virtual void <#=manyToOneRelation.UnsetMethodName #>()
         {
 			this.UnsetManyToOne(o => o.<#=manyToOneRelation.PropertyName #>, o => o.<#=relation.PathInRelatedModel #>);
         }
 <#
+					}
                 }
                 break;
 			case ModelRelationType.OneToOne:
@@ -575,18 +599,26 @@ namespace <#=type.Namespace.FullName#>
                 }
                 if (relation.AssociationType == AssociationType.Bidirectional)
                 {
+					if(!oneToOneRelation.ExistsSetMethod)
+					{
 #>
 
 		public virtual void <#=oneToOneRelation.SetMethodName #>(<#=oneToOneRelation.RelatedModelTypeName #> <#=oneToOneRelation.ParameterName #>)
         {
 			this.SetOneToOne(o => o.<#=oneToOneRelation.PropertyName #>, <#=oneToOneRelation.ParameterName #>, o => o.<#=relation.PathInRelatedModel #>);
         }
+<#
+                    }
+					if (!oneToOneRelation.ExistsUnsetMethod)
+					{
+#>
 
         public virtual void <#=oneToOneRelation.UnsetMethodName #>()
         {
 			this.UnsetOneToOne(o => o.<#=oneToOneRelation.PropertyName #>, o => o.<#=relation.PathInRelatedModel #>);
         }	
 <#
+					}
                 }
                 break;
         }
@@ -961,7 +993,11 @@ public abstract class OneModelRelation : ModelRelation
 	public bool IsSyntheticPropertyTypeRequired { get; set; }
 
 	//Only set for bidirection relation
+	public bool ExistsSetMethod { get; set; }
+
 	public string SetMethodName { get; set; }
+
+	public bool ExistsUnsetMethod { get; set; }
 
 	public string UnsetMethodName { get; set; }
 }
@@ -991,7 +1027,12 @@ public abstract class CollectionModelRelation : ModelRelation
 	public string FieldCollectionType { get; set; }
 
     //Only set for bidirection relation
+
+	public bool ExistsAddMethod { get; set; }
+
 	public string AddMethodName { get; set; }
+
+	public bool ExistsRemoveMethod { get; set; }
 
 	public string RemoveMethodName { get; set; }
 }
@@ -1234,7 +1275,16 @@ public class DomainModelWrapper
                 if (relation.AssociationType == AssociationType.Bidirectional)
                 {
                     collectionRelation.AddMethodName = "Add" + collectionRelation.SingularPropertyName;
+					collectionRelation.ExistsAddMethod = GlobalContainer.VSHelper.GetMethods(CodeClass, true)
+						.Any(o => o.Name == collectionRelation.AddMethodName && 
+							o.Parameters.Count == 1 &&
+							o.Parameters.OfType<CodeParameter>().First().Type.AsFullName == relation.RelatedModelTypeFullName);
+
 					collectionRelation.RemoveMethodName = "Remove" + collectionRelation.SingularPropertyName;
+					collectionRelation.ExistsRemoveMethod = GlobalContainer.VSHelper.GetMethods(CodeClass, true)
+						.Any(o => o.Name == collectionRelation.RemoveMethodName && 
+							o.Parameters.Count == 1 &&
+							o.Parameters.OfType<CodeParameter>().First().Type.AsFullName == relation.RelatedModelTypeFullName);
                 }
                 break;
 
@@ -1242,7 +1292,14 @@ public class DomainModelWrapper
 			case ModelRelationType.OneToOne:
 				var oneRelation = (OneModelRelation) relation;
                 oneRelation.SetMethodName = "Set" + relation.PropertyName;
+				oneRelation.ExistsSetMethod = GlobalContainer.VSHelper.GetMethods(CodeClass, true)
+						.Any(o => o.Name == oneRelation.SetMethodName && 
+							o.Parameters.Count == 1 &&
+							o.Parameters.OfType<CodeParameter>().First().Type.AsFullName == relation.RelatedModelTypeFullName);
+
 				oneRelation.UnsetMethodName = "Unset" + relation.PropertyName;
+				oneRelation.ExistsUnsetMethod = GlobalContainer.VSHelper.GetMethods(CodeClass, true)
+						.Any(o => o.Name == oneRelation.UnsetMethodName && o.Parameters.Count == 0);
 
                 if (relation.Type == ModelRelationType.ManyToOne)
                 {
@@ -2276,12 +2333,41 @@ public class VisualStudioHelper : AutomationHelper
         return props;
 	}
 
-	public IEnumerable<CodeFunction2> GetMethods(CodeClass2 codeClass)
+	public IEnumerable<CodeFunction2> GetMethods(CodeClass2 codeClass, bool includeInherited = false)
 	{
 		// Only look at regular method (e.g. ignore things like contructors)
-		return codeClass.Members.OfType<CodeFunction2>()
+		var methods = codeClass.Members.OfType<CodeFunction2>()
 			.Where(f => f.FunctionKind == vsCMFunction.vsCMFunctionFunction);
+	    if (includeInherited)
+	        methods = methods.Union(GetInheritedMethods((CodeType) codeClass));
+	    return methods;
 	}
+
+	public IEnumerable<CodeFunction2> GetInheritedMethods(CodeType element)
+    {
+        // If it's a local code element, we may be able to enumerate all its partial classes
+        if (element.InfoLocation == vsCMInfoLocation.vsCMInfoLocationProject)
+        {
+            var codeClass2 = element as CodeClass2;
+            if (codeClass2 != null)
+            {
+                var memberDict = new Dictionary<string, CodeElement>();
+                foreach (var partialClass in codeClass2.PartialClasses.OfType<CodeType>())
+                {
+                    if (GetAttribute(partialClass.Attributes, "System.CodeDom.Compiler.GeneratedCodeAttribute") != null)
+                        continue;
+                    var baseMembers = partialClass.Bases.OfType<CodeType>().SelectMany(x => VisibleMembers(x).OfType<CodeElement>());
+                    
+                    // Ensure we only have one entry per name from all the bases
+                    foreach (var baseMember in baseMembers) {
+                        memberDict[baseMember.Name] = baseMember;
+                    }
+                }
+                return memberDict.Values.OfType<CodeFunction2>();
+            }
+        }
+        return new List<CodeFunction2>();
+    }
 
 	public IEnumerable<CodeFunction2> GetActionResultMethods(CodeClass2 codeClass)
 	{
@@ -2319,9 +2405,9 @@ public class VisualStudioHelper : AutomationHelper
 		return methods;
 	}
 
-	public CodeFunction2 GetMethod(CodeClass2 codeClass, string name)
+	public CodeFunction2 GetMethod(CodeClass2 codeClass, string name, bool allowInherited = false)
 	{
-		return GetMethods(codeClass).FirstOrDefault(f => f.Name == name);
+		return GetMethods(codeClass, allowInherited).FirstOrDefault(f => f.Name == name);
 	}
 
     public string GetAttributeArgumentValue(CodeAttribute2 attribute, string argumentName)

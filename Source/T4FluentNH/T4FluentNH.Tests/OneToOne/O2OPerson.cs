@@ -1,4 +1,5 @@
-﻿using T4FluentNH.Attributes;
+﻿using FluentNHibernate.Automapping;
+using T4FluentNH.Attributes;
 
 namespace T4FluentNH.Tests.OneToOne
 {
@@ -13,5 +14,16 @@ namespace T4FluentNH.Tests.OneToOne
         [AsOneToOne] //cannot be unique
         public virtual O2OPerson Twin { get { return _twin; } set { SetField(ref _twin, value, ref _twinId); } }
 
+        //Custom Set method
+        public virtual void SetMarriedWith(O2OPerson marriedWith)
+        {
+            this.SetOneToOne(o => o.MarriedWith, marriedWith, o => o.MarriedWith);
+        }
+
+        //Custom unset method
+        public virtual void UnsetTwin()
+        {
+            this.UnsetOneToOne(o => o.Twin, o => o.Twin);
+        }	
     }
 }

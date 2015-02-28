@@ -24,11 +24,6 @@ namespace T4FluentNH.Tests.OneToOne
 
 		private int? _marriedWithId;
 
-		public virtual void SetMarriedWith(O2OPerson marriedWith)
-        {
-			this.SetOneToOne(o => o.MarriedWith, marriedWith, o => o.MarriedWith);
-        }
-
         public virtual void UnsetMarriedWith()
         {
 			this.UnsetOneToOne(o => o.MarriedWith, o => o.MarriedWith);
@@ -53,11 +48,6 @@ namespace T4FluentNH.Tests.OneToOne
         {
 			this.SetOneToOne(o => o.Twin, twin, o => o.Twin);
         }
-
-        public virtual void UnsetTwin()
-        {
-			this.UnsetOneToOne(o => o.Twin, o => o.Twin);
-        }	
 
 		#endregion
 

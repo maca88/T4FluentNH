@@ -435,18 +435,25 @@ namespace <#=type.Namespace.FullName#>
 <#
                 if (relation.AssociationType == AssociationType.Bidirectional)
                 {
+                    if (!oneToManyRelation.ExistsAddMethod)
+                    {
 #>
 
-        public virtual void <#=oneToManyRelation.AddMethodName#>(<#=oneToManyRelation.RelatedModelTypeName#> <#=oneToManyRelation.ParameterName#>)
+        public virtual void <#=oneToManyRelation.AddMethodName #>(<#=oneToManyRelation.RelatedModelTypeName #> <#=oneToManyRelation.ParameterName #>)
         {
-            this.AddOneToMany(o => o.<#=relation.PropertyName #>, <#=oneToManyRelation.ParameterName #>, o => o.<#=relation.PathInRelatedModel #>, o=> o.<#=oneToManyRelation.RemoveMethodName#>);
+            this.AddOneToMany(o => o.<#=relation.PropertyName #>, <#=oneToManyRelation.ParameterName #>, o => o.<#=relation.PathInRelatedModel #>, o=> o.<#=oneToManyRelation.RemoveMethodName #>);
         }
-
-        public virtual void <#=oneToManyRelation.RemoveMethodName#>(<#=oneToManyRelation.RelatedModelTypeName#> <#=oneToManyRelation.ParameterName#>)
+<#
+                    }
+					if (!oneToManyRelation.ExistsRemoveMethod)
+					{
+#>
+        public virtual void <#=oneToManyRelation.RemoveMethodName #>(<#=oneToManyRelation.RelatedModelTypeName #> <#=oneToManyRelation.ParameterName #>)
         {
 			this.RemoveOneToMany(o => o.<#=relation.PropertyName #>, <#=oneToManyRelation.ParameterName #>, o => o.<#=relation.PathInRelatedModel #>);
         }
 <#
+					}
                 }
                 break;
 			case ModelRelationType.ManyToMany:
@@ -993,7 +1000,12 @@ public abstract class CollectionModelRelation : ModelRelation
 	public string FieldCollectionType { get; set; }
 
     //Only set for bidirection relation
+
+	public bool ExistsAddMethod { get; set; }
+
 	public string AddMethodName { get; set; }
+
+	public bool ExistsRemoveMethod { get; set; }
 
 	public string RemoveMethodName { get; set; }
 }
@@ -1236,7 +1248,16 @@ public class DomainModelWrapper
                 if (relation.AssociationType == AssociationType.Bidirectional)
                 {
                     collectionRelation.AddMethodName = "Add" + collectionRelation.SingularPropertyName;
+					collectionRelation.ExistsAddMethod = GlobalContainer.VSHelper.GetMethods(CodeClass, true)
+						.Any(o => o.Name == collectionRelation.AddMethodName && 
+							o.Parameters.Count == 1 &&
+							o.Parameters.OfType<CodeParameter>().First().Type.AsFullName == relation.RelatedModelTypeFullName);
+
 					collectionRelation.RemoveMethodName = "Remove" + collectionRelation.SingularPropertyName;
+					collectionRelation.ExistsRemoveMethod = GlobalContainer.VSHelper.GetMethods(CodeClass, true)
+						.Any(o => o.Name == collectionRelation.RemoveMethodName && 
+							o.Parameters.Count == 1 &&
+							o.Parameters.OfType<CodeParameter>().First().Type.AsFullName == relation.RelatedModelTypeFullName);
                 }
                 break;
 
@@ -1305,7 +1326,7 @@ public class DomainModelWrapper
             //Check for Bidirectional association
 		    foreach(var cls in GlobalContainer.ProjectTypes[typeFullName])
             {
-			    foreach(var p in GlobalContainer.VSHelper.GetProperties(cls))
+			    foreach(var p in GlobalContainer.VSHelper.GetProperties(cls, true))
                 {
 				    if(GlobalContainer.VSHelper.IsEnumerable(p.Type) && 
 						GlobalContainer.VSHelper.IsGeneric(p.Type) && 
@@ -2270,19 +2291,49 @@ public class VisualStudioHelper : AutomationHelper
     public IEnumerable<CodeProperty2> GetProperties(CodeClass2 codeClass, bool includeInherited = false)
 	{
 		// Only look at regular method (e.g. ignore things like contructors)
-        if (!includeInherited)
+		var props = codeClass.Members.OfType<CodeProperty2>();
+        if (includeInherited)
         {
-            return codeClass.Members.OfType<CodeProperty2>();
+            props = props.Union(GetInheritedProperties((CodeType) codeClass));
         }
-        return GetInheritedProperties((CodeType) codeClass);
+        return props;
 	}
 
-	public IEnumerable<CodeFunction2> GetMethods(CodeClass2 codeClass)
+	public IEnumerable<CodeFunction2> GetMethods(CodeClass2 codeClass, bool includeInherited = false)
 	{
 		// Only look at regular method (e.g. ignore things like contructors)
-		return codeClass.Members.OfType<CodeFunction2>()
+		var methods = codeClass.Members.OfType<CodeFunction2>()
 			.Where(f => f.FunctionKind == vsCMFunction.vsCMFunctionFunction);
+	    if (includeInherited)
+	        methods = methods.Union(GetInheritedMethods((CodeType) codeClass));
+	    return methods;
 	}
+
+	public IEnumerable<CodeFunction2> GetInheritedMethods(CodeType element)
+    {
+        // If it's a local code element, we may be able to enumerate all its partial classes
+        if (element.InfoLocation == vsCMInfoLocation.vsCMInfoLocationProject)
+        {
+            var codeClass2 = element as CodeClass2;
+            if (codeClass2 != null)
+            {
+                var memberDict = new Dictionary<string, CodeElement>();
+                foreach (var partialClass in codeClass2.PartialClasses.OfType<CodeType>())
+                {
+                    if (GetAttribute(partialClass.Attributes, "System.CodeDom.Compiler.GeneratedCodeAttribute") != null)
+                        continue;
+                    var baseMembers = partialClass.Bases.OfType<CodeType>().SelectMany(x => VisibleMembers(x).OfType<CodeElement>());
+                    
+                    // Ensure we only have one entry per name from all the bases
+                    foreach (var baseMember in baseMembers) {
+                        memberDict[baseMember.Name] = baseMember;
+                    }
+                }
+                return memberDict.Values.OfType<CodeFunction2>();
+            }
+        }
+        return new List<CodeFunction2>();
+    }
 
 	public IEnumerable<CodeFunction2> GetActionResultMethods(CodeClass2 codeClass)
 	{
@@ -2320,9 +2371,9 @@ public class VisualStudioHelper : AutomationHelper
 		return methods;
 	}
 
-	public CodeFunction2 GetMethod(CodeClass2 codeClass, string name)
+	public CodeFunction2 GetMethod(CodeClass2 codeClass, string name, bool allowInherited = false)
 	{
-		return GetMethods(codeClass).FirstOrDefault(f => f.Name == name);
+		return GetMethods(codeClass, allowInherited).FirstOrDefault(f => f.Name == name);
 	}
 
     public string GetAttributeArgumentValue(CodeAttribute2 attribute, string argumentName)
