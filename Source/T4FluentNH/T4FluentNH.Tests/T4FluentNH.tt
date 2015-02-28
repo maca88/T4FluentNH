@@ -1303,7 +1303,7 @@ public class DomainModelWrapper
             //Check for Bidirectional association
 		    foreach(var cls in GlobalContainer.ProjectTypes[typeFullName])
             {
-			    foreach(var p in GlobalContainer.VSHelper.GetProperties(cls))
+			    foreach(var p in GlobalContainer.VSHelper.GetProperties(cls, true))
                 {
 				    if(GlobalContainer.VSHelper.IsEnumerable(p.Type) && 
 						GlobalContainer.VSHelper.IsGeneric(p.Type) && 
@@ -1777,7 +1777,7 @@ public class VisualStudioHelper : AutomationHelper
 		return PluralizationService.Singularize(name);
 	}
 
-    public List<CodeProperty> GetInheritedProperties(CodeType element)
+    public List<CodeProperty2> GetInheritedProperties(CodeType element)
     {
         // If it's a local code element, we may be able to enumerate all its partial classes
         if (element.InfoLocation == vsCMInfoLocation.vsCMInfoLocationProject)
@@ -1797,10 +1797,10 @@ public class VisualStudioHelper : AutomationHelper
                         memberDict[baseMember.Name] = baseMember;
                     }
                 }
-                return memberDict.Values.OfType<CodeProperty>().ToList();
+                return memberDict.Values.OfType<CodeProperty2>().ToList();
             }
         }
-        return new List<CodeProperty>();
+        return new List<CodeProperty2>();
     }
 
     /// <summary>
@@ -2265,10 +2265,15 @@ public class VisualStudioHelper : AutomationHelper
         return props;
     }
 
-    public IEnumerable<CodeProperty2> GetProperties(CodeClass2 codeClass)
+    public IEnumerable<CodeProperty2> GetProperties(CodeClass2 codeClass, bool includeInherited = false)
 	{
 		// Only look at regular method (e.g. ignore things like contructors)
-		return codeClass.Members.OfType<CodeProperty2>();
+		var props = codeClass.Members.OfType<CodeProperty2>();
+        if (includeInherited)
+        {
+            props = props.Union(GetInheritedProperties((CodeType) codeClass));
+        }
+        return props;
 	}
 
 	public IEnumerable<CodeFunction2> GetMethods(CodeClass2 codeClass)

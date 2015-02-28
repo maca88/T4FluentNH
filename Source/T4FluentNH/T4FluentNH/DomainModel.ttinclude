@@ -1252,7 +1252,7 @@ public class DomainModelWrapper
             //Check for Bidirectional association
 		    foreach(var cls in GlobalContainer.ProjectTypes[typeFullName])
             {
-			    foreach(var p in GlobalContainer.VSHelper.GetProperties(cls))
+			    foreach(var p in GlobalContainer.VSHelper.GetProperties(cls, true))
                 {
 				    if(GlobalContainer.VSHelper.IsEnumerable(p.Type) && 
 						GlobalContainer.VSHelper.IsGeneric(p.Type) && 
