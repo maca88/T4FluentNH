@@ -36,6 +36,22 @@ namespace T4FluentNH.Tests.Naming
 
 		#endregion
 
+		#region Uses
+
+		private ISet<Use> _uses;
+
+        public virtual void AddUse(Use us)
+        {
+            this.AddOneToMany(o => o.Uses, us, o => o.Case, o=> o.RemoveUse);
+        }
+
+        public virtual void RemoveUse(Use us)
+        {
+			this.RemoveOneToMany(o => o.Uses, us, o => o.Case);
+        }
+
+		#endregion
+
 
 		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
         {

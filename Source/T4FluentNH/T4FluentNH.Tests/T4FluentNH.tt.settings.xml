@@ -57,7 +57,12 @@
       <DerivedFromType>T4FluentNH.Domain.IUser</DerivedFromType>
     </ExternalType>
   </ExternalTypes>
-  
+  <Singularization>
+    <Singularize>
+      <Pattern>^([\w]*)Uses$</Pattern>
+      <Replace>$1Use</Replace>
+    </Singularize>
+  </Singularization>
   <NotNullAttribute>T4FluentNH.Tests.NotNullAttribute</NotNullAttribute>
   <LengthAttribute>T4FluentNH.Tests.LengthAttribute</LengthAttribute>
   <DefaultCollectionMapType>Set</DefaultCollectionMapType>

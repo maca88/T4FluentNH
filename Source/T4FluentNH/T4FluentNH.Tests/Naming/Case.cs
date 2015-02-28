@@ -13,6 +13,12 @@ namespace T4FluentNH.Tests.Naming
 
         [AsOneToOne]
         public virtual Switch Switch { get { return _switch; } set { SetField(ref _switch, value, ref _switchId); } }
+
+        public virtual ISet<Use> Uses
+        {
+            get { return _uses ?? (_uses = new HashSet<Use>()); }
+            set { _uses = value; }
+        } 
     }
 
     public partial class Switch : Entity
@@ -21,5 +27,13 @@ namespace T4FluentNH.Tests.Naming
 
         [AsOneToOne]
         public virtual Case Case { get { return _case; } set { SetField(ref _case, value, ref _caseId); } }
+    }
+
+    public partial class Use : Entity
+    {
+        public virtual string Name { get; set; }
+
+        public virtual Case Case { get { return _case; } set { SetField(ref _case, value, ref _caseId); } }
+
     }
 }

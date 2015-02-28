@@ -986,7 +986,13 @@ public static class GlobalContainer
 
 	public static string Singularize(string name)
 	{
-		return VSHelper.Singularize(name); //TODO: handle custom ones
+	    foreach (var singularize in Settings.Singularization
+			.Where(singularize => Regex.IsMatch(name, singularize.Pattern)))
+	    {
+	        return Regex.Replace(name, singularize.Pattern, singularize.Replace);
+	    }
+
+	    return VSHelper.Singularize(name);
 	}
 
     public static void Reset()
@@ -1477,6 +1483,14 @@ public class DomainModelWrapper
 
     }
 
+	public class Singularize
+    {
+        public string Pattern { get; set; }
+
+        public string Replace { get; set; }
+
+    }
+
     public class SyntheticProperties
     {
         public bool Generate { get; set; }
@@ -1535,6 +1549,12 @@ public class DomainModelWrapper
                         DerivedFromType = o.XPathSelectElement("DerivedFromType").Value,
                         FullName = o.XPathSelectElement("FullName").Value,
                     })),
+				Singularization = new List<Singularize>(xElement.XPathSelectElements("/Singularization//Singularize")
+                    .Select(o => new Singularize
+                    {
+                        Pattern = o.XPathSelectElement("Pattern").Value,
+                        Replace = o.XPathSelectElement("Replace").Value,
+                    })),
                 IgnoreTypes = new HashSet<string>(xElement.XPathSelectElements("/IgnoreTypes//IgnoreType").Select(o => o.Value)),
                 NotNullAttribute = xElement.XPathSelectElement("/NotNullAttribute").Value,
                 LengthAttribute = xElement.XPathSelectElement("/LengthAttribute").Value,
@@ -1579,6 +1599,8 @@ public class DomainModelWrapper
         public HashSet<string> IgnoreTypes { get; set; }
 
         public List<ExternalType> ExternalTypes { get; set; }
+
+		public List<Singularize> Singularization { get; set; }
 
         public string BaseEntityType { get; set; }
 
