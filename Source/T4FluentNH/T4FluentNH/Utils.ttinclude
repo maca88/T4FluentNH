@@ -596,12 +596,12 @@ public class VisualStudioHelper : AutomationHelper
 			f => !f.IsShared && f.FunctionKind == vsCMFunction.vsCMFunctionConstructor && f.Parameters.Count == 0);
 	}
 
-    public IEnumerable<CodeProperty> GetProperties(IEnumerable<CodeClass2> codeClasses)
+    public IEnumerable<CodeProperty> GetProperties(IEnumerable<CodeClass2> codeClasses, bool includeInherited = false)
     {
         var props = new List<CodeProperty>();
         foreach (var codeClass in codeClasses)
         {
-            props.AddRange(GetProperties(codeClass));
+            props.AddRange(GetProperties(codeClass, includeInherited));
         }
         return props;
     }

@@ -84,6 +84,12 @@
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
     <Compile Include="CustomAttribute.cs" />
+    <Compile Include="CustomOrganization.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="CustomUser.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
     <Compile Include="Dog.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
