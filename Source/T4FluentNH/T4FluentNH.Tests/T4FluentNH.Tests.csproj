@@ -87,9 +87,6 @@
     <Compile Include="Dog.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
-    <Compile Include="Entity.generated.cs">
-      <DependentUpon>T4FluentNH.tt</DependentUpon>
-    </Compile>
     <Compile Include="EntityTypes\ETCodeListEntity.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -112,6 +109,8 @@
     <Compile Include="ETSimpleEntity.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
+    <Compile Include="External\CustomOrganization.cs" />
+    <Compile Include="External\CustomUser.cs" />
     <Compile Include="External\ExtTest.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -144,7 +143,6 @@
     <Compile Include="GenUserRole%28TUser%29.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
-    <Compile Include="IEntity.cs" />
     <Compile Include="Inheritance\Animal.cs" />
     <Compile Include="Inheritance\Cat.cs" />
     <Compile Include="Inheritance\Dog.cs" />

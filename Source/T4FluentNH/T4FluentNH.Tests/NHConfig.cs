@@ -12,6 +12,7 @@ using NHibernate;
 using NHibernate.Cfg;
 using NHibernate.Tool.hbm2ddl;
 using T4FluentNH.Conventions;
+using T4FluentNH.Domain;
 using T4FluentNH.Tests.External;
 
 namespace T4FluentNH.Tests
@@ -37,7 +38,7 @@ namespace T4FluentNH.Tests
             var autoPestModel = AutoMap
                 .Assemblies(new AutomappingConfiguration(), new[] { modelAssembly })
                 .UseOverridesFromAssembly(modelAssembly)
-                .IgnoreBase<Entity>()
+                .IgnoreBase<Domain.Entity>()
                 .Conventions.AddFromAssemblyOf<ReadOnlyAttributeConvention>()
                 .Conventions.Add(PrimaryKey.Name.Is(o => "Id"))
                 .Conventions.Add(ForeignKey.EndsWith("Id"));

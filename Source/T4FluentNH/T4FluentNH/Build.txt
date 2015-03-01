@@ -74,6 +74,8 @@ GlobalContainer.KnownNamespaces = new HashSet<string>
         "System.Reflection",
         "FluentNHibernate.Automapping",
     };
+if (GlobalContainer.Settings.GenerateMetadata.Relations)
+    GlobalContainer.KnownNamespaces.Add("T4FluentNH.Metadata");
 
 //reset static props
 GlobalContainer.Reset();
@@ -108,7 +110,7 @@ VSHelper.ProcessFiles(GlobalContainer.ProjectItems, (file, name) => VSHelper.Pro
         EntityType entityType = null;
 
 		//Get properties for overriden type
-		var properties = new Dictionary<string, CodeProperty2>();
+		var properties = new Dictionary<string, CodeProperty>();
 		foreach(var partialType in GlobalContainer.ProjectTypes[overrideType])
 		{
 		    if (entityType == null)
@@ -141,7 +143,7 @@ VSHelper.ProcessFiles(GlobalContainer.ProjectItems, (file, name) => VSHelper.Pro
             var prop = properties[propName];
             if(prop == null) throw new Exception("prop null");
             if(!GlobalContainer.Components.ContainsKey(overrideType))
-                GlobalContainer.Components.Add(overrideType, new Dictionary<string, CodeProperty2>());
+                GlobalContainer.Components.Add(overrideType, new Dictionary<string, CodeProperty>());
             GlobalContainer.Components[overrideType].Add(propName, prop);
         }
 
@@ -990,111 +992,6 @@ namespace FluentNHibernate.Automapping
     }
 }
 
-<#
-	if (GlobalContainer.Settings.GenerateMetadata.Relations)
-	{
-#>
-namespace FluentNHibernate.Automapping
-{
-    public enum RelationType
-    {
-        None,
-        OneToOne,
-        OneToMany,
-        ManyToOne,
-        ManyToMany
-    }
-
-    public enum CollectionMapType
-    {
-        Unknown = 0,
-        Set,
-        Bag,
-        List
-    }
-
-    public enum AssociationType
-    {
-        Unknown = 0,
-        Unidirectional,
-        Bidirectional
-    }
-
-    public abstract class RelationMetadata
-    {
-        public abstract RelationType Type { get; }
-
-        public Type RelatedModelType { get; set; }
-
-        public PropertyInfo RelatedModelProperty { get; set; }
-
-        public PropertyInfo RelatedModelIdProperty { get; set; }
-
-        public AssociationType AssociationType { get; set; }
-
-        public FieldInfo Field { get; set; }
-
-        public string ParameterName { get; set; }
-
-        public PropertyInfo Property { get; set; }
-
-    }
-
-    public class NoneRelationMetadata : RelationMetadata
-    {
-        public override RelationType Type { get { return RelationType.None; } }
-    }
-
-    public abstract class OneRelationMetadata : RelationMetadata
-    {
-        public PropertyInfo SyntheticProperty { get; set; }
-
-        public FieldInfo SyntheticField { get; set; }
-
-        public int? SyntheticPropertyMaxLength { get; set; }
-
-        public bool IsSyntheticPropertyTypeRequired { get; set; }
-
-        public MethodInfo SetMethod { get; set; }
-
-        public MethodInfo UnsetMethod { get; set; }
-    }
-
-    public class OneToOneRelationMetadata : OneRelationMetadata
-    {
-        public override RelationType Type { get { return RelationType.OneToOne; } }
-    }
-
-    public class ManyToOneRelationMetadata : OneRelationMetadata
-    {
-        public override RelationType Type { get { return RelationType.ManyToOne; } }
-
-        public MethodInfo RelatedModelRemoveMethod { get; set; }
-    }
-
-    public abstract class CollectionRelationMetadata : RelationMetadata
-    {
-        public CollectionMapType CollectionMapType { get; set; }
-
-        public MethodInfo AddMethod { get; set; }
-
-        public MethodInfo RemoveMethod { get; set; }
-    }
-
-    public class OneToManyRelationMetadata : CollectionRelationMetadata
-    {
-        public override RelationType Type { get { return RelationType.OneToMany; } }
-    }
-
-    public class ManyToManyRelationMetadata : CollectionRelationMetadata
-    {
-        public override RelationType Type { get { return RelationType.ManyToMany; } }
-    }	
-}
-<#
-	}
-#>
-
 <#+
 public enum ModelRelationType
 {
@@ -1176,7 +1073,7 @@ public abstract class ModelRelation
         }
     } 
 
-	public CodeProperty2 Property { get; set; }
+	public CodeProperty Property { get; set; }
 
     public string PropertyName
     {
@@ -1293,7 +1190,7 @@ public static class GlobalContainer
 
 	public static Dictionary<string, string> DomainOverrideFiles;
 
-    public static Dictionary<string, Dictionary<string, CodeProperty2>> Components; //Dict<typeFullName, PropName, PropTypefullName>
+    public static Dictionary<string, Dictionary<string, CodeProperty>> Components; //Dict<typeFullName, PropName, PropTypefullName>
 
 
 	public static string Singularize(string name)
@@ -1335,7 +1232,7 @@ public static class GlobalContainer
 		DomainClasses = new Dictionary<string, DomainModelWrapper>();
 		Overrides = new Dictionary<string, Dictionary<string, ModelRelation>>();
 		ProjectTypes = new Dictionary<string, List<CodeClass2>>();
-		Components = new Dictionary<string, Dictionary<string, CodeProperty2>>();
+		Components = new Dictionary<string, Dictionary<string, CodeProperty>>();
 	    GeneratedFiles = new Dictionary<string, string>();
 		DomainOverrideFiles = new Dictionary<string, string>();
 	}
@@ -1346,7 +1243,7 @@ public class DomainModelWrapper
 {
 	public DomainModelWrapper()
 	{
-		MappedProperties = new Dictionary<string, CodeProperty2>();
+		MappedProperties = new Dictionary<string, CodeProperty>();
 		RelatedModels = new List<ModelRelation>();
 	}
 	
@@ -1363,7 +1260,7 @@ public class DomainModelWrapper
 	#endregion
 
 
-	public Dictionary<string, CodeProperty2> MappedProperties { get; private set; }
+	public Dictionary<string, CodeProperty> MappedProperties { get; private set; }
 
 	public EntityType EntityType { get; private set; }
 
@@ -1446,11 +1343,12 @@ public class DomainModelWrapper
 		//Editing properties 
 		//VSHelper.Warning(CodeClass.FullName + " "+  VSHelper.GetProperties(CodeClass).Count().ToString());
 		//VSHelper.Warning(CodeClass.FullName);
-		foreach(CodeProperty2 prop in GlobalContainer.VSHelper.GetProperties(CodeClass))
+		foreach(var prop in GlobalContainer.VSHelper.GetProperties(CodeClass))
 		{
+		    var prop2 = prop as CodeProperty2;
 			//dont touch overrides and abstract props           
-            if(prop.OverrideKind != vsCMOverrideKind.vsCMOverrideKindOverride && prop.OverrideKind != vsCMOverrideKind.vsCMOverrideKindAbstract)
-			    GlobalContainer.VSHelper.SetAsVirtual(prop);
+            if(prop2 != null && prop2.OverrideKind != vsCMOverrideKind.vsCMOverrideKindOverride && prop2.OverrideKind != vsCMOverrideKind.vsCMOverrideKindAbstract)
+			    GlobalContainer.VSHelper.SetAsVirtual(prop2);
 
 			if (!GlobalContainer.VSHelper.IsNHibernateProperty(prop) || GlobalContainer.Settings.IgnoreTypes.Contains(prop.Type.AsFullName) ||
                 prop.Type.TypeKind == vsCMTypeRef.vsCMTypeRefOther) //Generic type
@@ -1561,7 +1459,7 @@ public class DomainModelWrapper
         }
     }
 
-    private ModelRelation GetRelation(CodeProperty2 prop)
+    private ModelRelation GetRelation(CodeProperty prop)
 	{
 	    if (GlobalContainer.Overrides.ContainsKey(FullName) && GlobalContainer.Overrides[FullName].ContainsKey(prop.Name))
 	        return GlobalContainer.Overrides[FullName][prop.Name];
@@ -1693,7 +1591,7 @@ public class DomainModelWrapper
 	    };
 	}
 
-    private void EditMappedManyRelation(CodeProperty2 prop, CollectionModelRelation relation)
+    private void EditMappedManyRelation(CodeProperty prop, CollectionModelRelation relation)
     {
 		//Gtt.Warning(string.Format("{0} - {1} = {2}", FullName, listType, relation));
         GlobalContainer.VSHelper.SetAsPublic(prop);
@@ -1733,7 +1631,7 @@ public class DomainModelWrapper
 		GlobalContainer.VSHelper.SetPropertyBody(prop, body);	
     }
 
-    private void EditMappedOneRelation(CodeProperty2 prop, OneModelRelation relation)
+    private void EditMappedOneRelation(CodeProperty prop, OneModelRelation relation)
     {
         if (relation.GenerateSyntheticProperty)
         {
@@ -1755,7 +1653,7 @@ public class DomainModelWrapper
         }
     }
 
-    private void EditMappedComponent(CodeProperty2 prop)
+    private void EditMappedComponent(CodeProperty prop)
     {
 	    var body = string.Format(@"
 		{{
@@ -1766,7 +1664,7 @@ public class DomainModelWrapper
         GlobalContainer.VSHelper.SetPropertyBody(prop, body);
     }
 
-	private void EditMappedProperty(CodeProperty2 prop)
+	private void EditMappedProperty(CodeProperty prop)
     {
         var relation = GetRelation(prop);
 		SetupRelation(relation);
@@ -2081,7 +1979,7 @@ public class VisualStudioHelper : AutomationHelper
 		return PluralizationService.Singularize(name);
 	}
 
-    public List<CodeProperty2> GetInheritedProperties(CodeType element)
+    public List<CodeProperty> GetInheritedProperties(CodeType element)
     {
         // If it's a local code element, we may be able to enumerate all its partial classes
         if (element.InfoLocation == vsCMInfoLocation.vsCMInfoLocationProject)
@@ -2101,10 +1999,10 @@ public class VisualStudioHelper : AutomationHelper
                         memberDict[baseMember.Name] = baseMember;
                     }
                 }
-                return memberDict.Values.OfType<CodeProperty2>().ToList();
+                return memberDict.Values.OfType<CodeProperty>().ToList();
             }
         }
-        return new List<CodeProperty2>();
+        return new List<CodeProperty>();
     }
 
     /// <summary>
@@ -2194,7 +2092,7 @@ public class VisualStudioHelper : AutomationHelper
         return false;
     }
 
-	public string GetValidNHibernteEnumerableInterface(CodeProperty2 prop, string listImplType, bool strict, string newItemType = null) 
+	public string GetValidNHibernteEnumerableInterface(CodeProperty prop, string listImplType, bool strict, string newItemType = null) 
 	{
 		var typeName = GetPropertyType(prop);
 	    //if (typeName.Contains("IEnumerable"))
@@ -2218,7 +2116,7 @@ public class VisualStudioHelper : AutomationHelper
 		throw new Exception(string.Format("Type {0} is not enumerable", typeName));
 	}
 
-	public string GetEnumerableImplType(CodeProperty2 prop)
+	public string GetEnumerableImplType(CodeProperty prop)
 	{
 	    var type = prop.Type;
 		var typeName = type.CodeType.Name;
@@ -2446,17 +2344,17 @@ public class VisualStudioHelper : AutomationHelper
 			(access != vsCMAccess.vsCMAccessProtected && access != vsCMAccess.vsCMAccessProject);
 	}
 
-	public bool IsNHibernateProperty(CodeProperty2 prop)
+	public bool IsNHibernateProperty(CodeProperty prop)
     {
 		return (IsProtectedInternal(prop.Access) || prop.Access == vsCMAccess.vsCMAccessPublic) && prop.Setter != null;
     }
 
-	public void SetAsProtectedInternal(CodeProperty2 prop)
+	public void SetAsProtectedInternal(CodeProperty prop)
 	{
 		prop.Access = vsCMAccess.vsCMAccessProjectOrProtected;
 	}
 
-	public void SetAsPublic(CodeProperty2 prop)
+	public void SetAsPublic(CodeProperty prop)
 	{
 		prop.Access = vsCMAccess.vsCMAccessPublic;
 	}
@@ -2478,12 +2376,12 @@ public class VisualStudioHelper : AutomationHelper
 		}
 	}
 
-	public void SetSetter(CodeProperty2 prop, string text)
+	public void SetSetter(CodeProperty prop, string text)
 	{
 		SetCodeFunctionText(prop.Setter, text);
 	}
 
-	public void SetGetter(CodeProperty2 prop, string text)
+	public void SetGetter(CodeProperty prop, string text)
 	{
 		SetCodeFunctionText(prop.Getter, text);
 	}
@@ -2499,7 +2397,7 @@ public class VisualStudioHelper : AutomationHelper
 	    SetCodeFunctionText(prop.Setter, setterText);
 	}
 
-	public string GetPropertyType(CodeProperty2 prop)
+	public string GetPropertyType(CodeProperty prop)
 	{
 		var codeStart = prop.StartPoint.CreateEditPoint();
 		var codeFinish = prop.EndPoint;
@@ -2510,7 +2408,7 @@ public class VisualStudioHelper : AutomationHelper
 		return match.Groups[2].Value;
 	}
 
-	public void SetPropertyType(CodeProperty2 prop, string type)
+	public void SetPropertyType(CodeProperty prop, string type)
 	{
 		var codeStart = prop.StartPoint.CreateEditPoint();
 		var codeFinish = prop.EndPoint;
@@ -2519,7 +2417,7 @@ public class VisualStudioHelper : AutomationHelper
 		codeStart.ReplaceText(codeFinish.CreateEditPoint(), functionText.Replace(currentType, type), (int)vsEPReplaceTextOptions.vsEPReplaceTextAutoformat);
 	}
 
-	public void SetPropertyBody(CodeProperty2 prop, string body)
+	public void SetPropertyBody(CodeProperty prop, string body)
 	{
 		var codeStart = prop.StartPoint.CreateEditPoint();
 		var codeFinish = prop.EndPoint;
@@ -2570,9 +2468,9 @@ public class VisualStudioHelper : AutomationHelper
 			f => !f.IsShared && f.FunctionKind == vsCMFunction.vsCMFunctionConstructor && f.Parameters.Count == 0);
 	}
 
-    public IEnumerable<CodeProperty2> GetProperties(IEnumerable<CodeClass2> codeClasses)
+    public IEnumerable<CodeProperty> GetProperties(IEnumerable<CodeClass2> codeClasses)
     {
-        var props = new List<CodeProperty2>();
+        var props = new List<CodeProperty>();
         foreach (var codeClass in codeClasses)
         {
             props.AddRange(GetProperties(codeClass));
@@ -2580,10 +2478,10 @@ public class VisualStudioHelper : AutomationHelper
         return props;
     }
 
-    public IEnumerable<CodeProperty2> GetProperties(CodeClass2 codeClass, bool includeInherited = false)
+    public IEnumerable<CodeProperty> GetProperties(CodeClass2 codeClass, bool includeInherited = false)
 	{
 		// Only look at regular method (e.g. ignore things like contructors)
-		var props = codeClass.Members.OfType<CodeProperty2>();
+		var props = codeClass.Members.OfType<CodeProperty>();
         if (includeInherited)
         {
             props = props.Union(GetInheritedProperties((CodeType) codeClass));

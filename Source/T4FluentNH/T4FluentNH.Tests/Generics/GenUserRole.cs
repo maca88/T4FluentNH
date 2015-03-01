@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace T4FluentNH.Tests.Generics
 {
-    public abstract partial class GenUserRole<TUser> : Entity
+    public abstract partial class GenUserRole<TUser> : Domain.Entity
     {
         public virtual TUser User { get; set; }
 

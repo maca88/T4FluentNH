@@ -7,7 +7,7 @@ using T4FluentNH.Attributes;
 
 namespace T4FluentNH.Tests.Naming
 {
-    public partial class Case : Entity
+    public partial class Case : Domain.Entity
     {
         public virtual string Test { get; set; }
 
@@ -25,7 +25,7 @@ namespace T4FluentNH.Tests.Naming
         } 
     }
 
-    public partial class Switch : Entity
+    public partial class Switch : Domain.Entity
     {
         public virtual string Name { get; set; }
 
@@ -37,7 +37,7 @@ namespace T4FluentNH.Tests.Naming
         }
     }
 
-    public partial class Use : Entity
+    public partial class Use : Domain.Entity
     {
         public virtual string Name { get; set; }
 

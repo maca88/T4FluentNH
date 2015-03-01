@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace T4FluentNH.Tests.EntityTypes
 {
-    public partial class ETSimpleEntity : Entity
+    public partial class ETSimpleEntity : Domain.Entity
     {
         public virtual string Name { get; set; }
 

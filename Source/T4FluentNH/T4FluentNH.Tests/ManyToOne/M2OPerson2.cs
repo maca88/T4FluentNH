@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace T4FluentNH.Tests.ManyToOne
 {
-    public partial class M2OPerson2 : Entity
+    public partial class M2OPerson2 : Domain.Entity
     {
         public virtual string Name { get; set; }
 
@@ -20,7 +20,7 @@ namespace T4FluentNH.Tests.ManyToOne
     }
 
 
-    public partial class M2OCar2 : Entity
+    public partial class M2OCar2 : Domain.Entity
     {
         public virtual string Model { get; set; }
 

@@ -11,7 +11,7 @@ namespace T4FluentNH.Tests.Generics
         
     }
 
-    public abstract partial class GenOrganization<TUser, TOrganization> : Entity
+    public abstract partial class GenOrganization<TUser, TOrganization> : Domain.Entity
         where TUser : GenUser<TUser, TOrganization>
         where TOrganization: GenOrganization<TUser, TOrganization>
     {

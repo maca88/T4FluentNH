@@ -60,6 +60,17 @@
     <Compile Include="Conventions\ReadOnlyAttributeConvention.cs" />
     <Compile Include="Extensions\ExpressionExtensions.cs" />
     <Compile Include="Extensions\OneToManyPartExtensions.cs" />
+    <Compile Include="Metadata\AssociationType.cs" />
+    <Compile Include="Metadata\CollectionMapType.cs" />
+    <Compile Include="Metadata\CollectionRelationMetadata.cs" />
+    <Compile Include="Metadata\ManyToManyRelationMetadata.cs" />
+    <Compile Include="Metadata\ManyToOneRelationMetadata.cs" />
+    <Compile Include="Metadata\NoneRelationMetadata.cs" />
+    <Compile Include="Metadata\OneRelationMetadata.cs" />
+    <Compile Include="Metadata\OneToManyRelationMetadata.cs" />
+    <Compile Include="Metadata\OneToOneRelationMetadata.cs" />
+    <Compile Include="Metadata\RelationMetadata.cs" />
+    <Compile Include="Metadata\RelationType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

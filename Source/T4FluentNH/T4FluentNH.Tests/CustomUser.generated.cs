@@ -6,18 +6,24 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using FluentNHibernate.Automapping;
-namespace T4FluentNH.Tests
+using T4FluentNH.Metadata;
+namespace T4FluentNH.Tests.External
 {
 	[GeneratedCode("T4Template", "1.0")]
-	public partial class Entity
+	public partial class CustomUser
 	{
 
 		#region RelationsMetadata
 
-		public static readonly Dictionary<string, RelationMetadata> RelationsMetadata =
+		public new static readonly Dictionary<string, RelationMetadata> RelationsMetadata =
             new Dictionary<string, RelationMetadata>
             {
             };
+
+		#endregion
+
+		#region CustomUser
+
 
 		#endregion
 

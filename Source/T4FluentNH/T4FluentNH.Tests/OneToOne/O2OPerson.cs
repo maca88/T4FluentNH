@@ -4,7 +4,7 @@ using T4FluentNH.Attributes;
 namespace T4FluentNH.Tests.OneToOne
 {
     //The right way to do one to one on same class
-    public partial class O2OPerson : Entity
+    public partial class O2OPerson : Domain.Entity
     {
         public virtual string Name { get; set; }
 

@@ -107,7 +107,7 @@ public class VisualStudioHelper : AutomationHelper
 		return PluralizationService.Singularize(name);
 	}
 
-    public List<CodeProperty2> GetInheritedProperties(CodeType element)
+    public List<CodeProperty> GetInheritedProperties(CodeType element)
     {
         // If it's a local code element, we may be able to enumerate all its partial classes
         if (element.InfoLocation == vsCMInfoLocation.vsCMInfoLocationProject)
@@ -127,10 +127,10 @@ public class VisualStudioHelper : AutomationHelper
                         memberDict[baseMember.Name] = baseMember;
                     }
                 }
-                return memberDict.Values.OfType<CodeProperty2>().ToList();
+                return memberDict.Values.OfType<CodeProperty>().ToList();
             }
         }
-        return new List<CodeProperty2>();
+        return new List<CodeProperty>();
     }
 
     /// <summary>
@@ -220,7 +220,7 @@ public class VisualStudioHelper : AutomationHelper
         return false;
     }
 
-	public string GetValidNHibernteEnumerableInterface(CodeProperty2 prop, string listImplType, bool strict, string newItemType = null) 
+	public string GetValidNHibernteEnumerableInterface(CodeProperty prop, string listImplType, bool strict, string newItemType = null) 
 	{
 		var typeName = GetPropertyType(prop);
 	    //if (typeName.Contains("IEnumerable"))
@@ -244,7 +244,7 @@ public class VisualStudioHelper : AutomationHelper
 		throw new Exception(string.Format("Type {0} is not enumerable", typeName));
 	}
 
-	public string GetEnumerableImplType(CodeProperty2 prop)
+	public string GetEnumerableImplType(CodeProperty prop)
 	{
 	    var type = prop.Type;
 		var typeName = type.CodeType.Name;
@@ -472,17 +472,17 @@ public class VisualStudioHelper : AutomationHelper
 			(access != vsCMAccess.vsCMAccessProtected && access != vsCMAccess.vsCMAccessProject);
 	}
 
-	public bool IsNHibernateProperty(CodeProperty2 prop)
+	public bool IsNHibernateProperty(CodeProperty prop)
     {
 		return (IsProtectedInternal(prop.Access) || prop.Access == vsCMAccess.vsCMAccessPublic) && prop.Setter != null;
     }
 
-	public void SetAsProtectedInternal(CodeProperty2 prop)
+	public void SetAsProtectedInternal(CodeProperty prop)
 	{
 		prop.Access = vsCMAccess.vsCMAccessProjectOrProtected;
 	}
 
-	public void SetAsPublic(CodeProperty2 prop)
+	public void SetAsPublic(CodeProperty prop)
 	{
 		prop.Access = vsCMAccess.vsCMAccessPublic;
 	}
@@ -504,12 +504,12 @@ public class VisualStudioHelper : AutomationHelper
 		}
 	}
 
-	public void SetSetter(CodeProperty2 prop, string text)
+	public void SetSetter(CodeProperty prop, string text)
 	{
 		SetCodeFunctionText(prop.Setter, text);
 	}
 
-	public void SetGetter(CodeProperty2 prop, string text)
+	public void SetGetter(CodeProperty prop, string text)
 	{
 		SetCodeFunctionText(prop.Getter, text);
 	}
@@ -525,7 +525,7 @@ public class VisualStudioHelper : AutomationHelper
 	    SetCodeFunctionText(prop.Setter, setterText);
 	}
 
-	public string GetPropertyType(CodeProperty2 prop)
+	public string GetPropertyType(CodeProperty prop)
 	{
 		var codeStart = prop.StartPoint.CreateEditPoint();
 		var codeFinish = prop.EndPoint;
@@ -536,7 +536,7 @@ public class VisualStudioHelper : AutomationHelper
 		return match.Groups[2].Value;
 	}
 
-	public void SetPropertyType(CodeProperty2 prop, string type)
+	public void SetPropertyType(CodeProperty prop, string type)
 	{
 		var codeStart = prop.StartPoint.CreateEditPoint();
 		var codeFinish = prop.EndPoint;
@@ -545,7 +545,7 @@ public class VisualStudioHelper : AutomationHelper
 		codeStart.ReplaceText(codeFinish.CreateEditPoint(), functionText.Replace(currentType, type), (int)vsEPReplaceTextOptions.vsEPReplaceTextAutoformat);
 	}
 
-	public void SetPropertyBody(CodeProperty2 prop, string body)
+	public void SetPropertyBody(CodeProperty prop, string body)
 	{
 		var codeStart = prop.StartPoint.CreateEditPoint();
 		var codeFinish = prop.EndPoint;
@@ -596,9 +596,9 @@ public class VisualStudioHelper : AutomationHelper
 			f => !f.IsShared && f.FunctionKind == vsCMFunction.vsCMFunctionConstructor && f.Parameters.Count == 0);
 	}
 
-    public IEnumerable<CodeProperty2> GetProperties(IEnumerable<CodeClass2> codeClasses)
+    public IEnumerable<CodeProperty> GetProperties(IEnumerable<CodeClass2> codeClasses)
     {
-        var props = new List<CodeProperty2>();
+        var props = new List<CodeProperty>();
         foreach (var codeClass in codeClasses)
         {
             props.AddRange(GetProperties(codeClass));
@@ -606,10 +606,10 @@ public class VisualStudioHelper : AutomationHelper
         return props;
     }
 
-    public IEnumerable<CodeProperty2> GetProperties(CodeClass2 codeClass, bool includeInherited = false)
+    public IEnumerable<CodeProperty> GetProperties(CodeClass2 codeClass, bool includeInherited = false)
 	{
 		// Only look at regular method (e.g. ignore things like contructors)
-		var props = codeClass.Members.OfType<CodeProperty2>();
+		var props = codeClass.Members.OfType<CodeProperty>();
         if (includeInherited)
         {
             props = props.Union(GetInheritedProperties((CodeType) codeClass));

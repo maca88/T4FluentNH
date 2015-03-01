@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace T4FluentNH.Tests.Generics
 {
-    public abstract partial class GenOrganizationRole<TOrganization> : Entity
+    public abstract partial class GenOrganizationRole<TOrganization> : Domain.Entity
     {
         public virtual TOrganization Organization { get; set; }
 

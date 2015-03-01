@@ -8,7 +8,7 @@ using FluentNHibernate.Automapping;
 
 namespace T4FluentNH.Tests.Inheritance
 {
-    public partial class Owner : Entity
+    public partial class Owner : Domain.Entity
     {
         public virtual ISet<Dog> Dogs
         {

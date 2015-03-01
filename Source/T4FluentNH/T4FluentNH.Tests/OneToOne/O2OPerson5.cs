@@ -4,7 +4,7 @@ using FluentNHibernate.Automapping.Alterations;
 namespace T4FluentNH.Tests.OneToOne
 {
     //The right way to do one to one (1 --- 1..0) between two classes that share the same id
-    public partial class O2OPerson5 : Entity
+    public partial class O2OPerson5 : Domain.Entity
     {
         public virtual string Name { get; set; }
 
@@ -24,7 +24,7 @@ namespace T4FluentNH.Tests.OneToOne
         }
     }
 
-    public partial class O2OIdentityCard5 : Entity
+    public partial class O2OIdentityCard5 : Domain.Entity
     {
         public virtual string Code { get; set; }
 

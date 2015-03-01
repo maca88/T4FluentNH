@@ -17,6 +17,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using FluentNHibernate.Automapping;
+using T4FluentNH.Metadata;
 
 namespace FluentNHibernate.Automapping
 {
@@ -64,8 +65,8 @@ namespace FluentNHibernate.Automapping
             Expression<Func<TOne, IEnumerable<TMany>>> manyListExpr, TMany many,
             Expression<Func<TMany, TOne>> oneExpr,
             Expression<Func<TOne, Action<TMany>>> removeManyExpr)
-            where TOne : T4FluentNH.Tests.IEntity
-            where TMany : T4FluentNH.Tests.IEntity
+            where TOne : T4FluentNH.Domain.IEntity
+            where TMany : T4FluentNH.Domain.IEntity
         {
             var enumerable = manyListExpr.Compile()(one);
             var collection = (ICollection<TMany>)enumerable;
@@ -91,8 +92,8 @@ namespace FluentNHibernate.Automapping
             Expression<Func<TOne, IEnumerable<TMany>>> manyListExpr, TMany many,
             Expression<Func<TMany, TOne>> entityExpr
             )
-            where TOne : T4FluentNH.Tests.IEntity
-            where TMany : T4FluentNH.Tests.IEntity
+            where TOne : T4FluentNH.Domain.IEntity
+            where TMany : T4FluentNH.Domain.IEntity
         {
             var enumerable = manyListExpr.Compile()(one);
             var collection = (ICollection<TMany>)enumerable;
@@ -113,8 +114,8 @@ namespace FluentNHibernate.Automapping
             Expression<Func<TMany, TOne>> oneExpr, TOne newOne,
             Expression<Func<TOne, Action<TMany>>> removeManyExpr,
             Expression<Func<TOne, IEnumerable<TMany>>> manyExp)
-            where TOne : T4FluentNH.Tests.IEntity
-            where TMany : T4FluentNH.Tests.IEntity
+            where TOne : T4FluentNH.Domain.IEntity
+            where TMany : T4FluentNH.Domain.IEntity
         {
             var one = oneExpr.Compile()(many);
             var onePropInfo = GetPropertyInfo(many, oneExpr);
@@ -138,8 +139,8 @@ namespace FluentNHibernate.Automapping
         public static void UnsetManyToOne<TMany, TOne>(this TMany many,
             Expression<Func<TMany, TOne>> oneExpr,
             Expression<Func<TOne, IEnumerable<TMany>>> manyListExpr)
-            where TOne : T4FluentNH.Tests.IEntity
-            where TMany : T4FluentNH.Tests.IEntity
+            where TOne : T4FluentNH.Domain.IEntity
+            where TMany : T4FluentNH.Domain.IEntity
         {
             var one = oneExpr.Compile()(many);
             var onePropInfo = GetPropertyInfo(many, oneExpr);
@@ -157,8 +158,8 @@ namespace FluentNHibernate.Automapping
         public static void AddManyToMany<TMany, TMany2>(this TMany many,
             Expression<Func<TMany, IEnumerable<TMany2>>> many2ListExpr, TMany2 many2,
             Expression<Func<TMany2, IEnumerable<TMany>>> manyListExpr)
-            where TMany : T4FluentNH.Tests.IEntity
-            where TMany2 : T4FluentNH.Tests.IEntity
+            where TMany : T4FluentNH.Domain.IEntity
+            where TMany2 : T4FluentNH.Domain.IEntity
         {
             var many2List = (ICollection<TMany2>)many2ListExpr.Compile()(many);
             var manyList = (ICollection<TMany>)manyListExpr.Compile()(many2);
@@ -173,8 +174,8 @@ namespace FluentNHibernate.Automapping
         public static void RemoveManyToMany<TMany, TMany2>(this TMany many,
             Expression<Func<TMany, IEnumerable<TMany2>>> many2ListExpr, TMany2 many2,
             Expression<Func<TMany2, IEnumerable<TMany>>> manyListExpr)
-            where TMany : T4FluentNH.Tests.IEntity
-            where TMany2 : T4FluentNH.Tests.IEntity
+            where TMany : T4FluentNH.Domain.IEntity
+            where TMany2 : T4FluentNH.Domain.IEntity
         {
             var many2List = (ICollection<TMany2>)many2ListExpr.Compile()(many);
             var manyList = (ICollection<TMany>)manyListExpr.Compile()(many2);
@@ -189,8 +190,8 @@ namespace FluentNHibernate.Automapping
         public static void SetOneToOne<TOne, TOne2>(this TOne one,
             Expression<Func<TOne, TOne2>> one2Expr, TOne2 one2,
             Expression<Func<TOne2, TOne>> oneExpr)
-            where TOne : T4FluentNH.Tests.IEntity
-            where TOne2 : T4FluentNH.Tests.IEntity
+            where TOne : T4FluentNH.Domain.IEntity
+            where TOne2 : T4FluentNH.Domain.IEntity
         {
             var oneInOne2 = oneExpr.Compile()(one2);
             var oneInOne2PropInfo = GetPropertyInfo(one2, oneExpr);
@@ -216,8 +217,8 @@ namespace FluentNHibernate.Automapping
         public static void UnsetOneToOne<TOne, TOne2>(this TOne one,
             Expression<Func<TOne, TOne2>> one2Expr,
             Expression<Func<TOne2, TOne>> oneExpr)
-            where TOne : T4FluentNH.Tests.IEntity
-            where TOne2 : T4FluentNH.Tests.IEntity
+            where TOne : T4FluentNH.Domain.IEntity
+            where TOne2 : T4FluentNH.Domain.IEntity
         {
             var one2 = one2Expr.Compile()(one);
             var one2PropInfo = GetPropertyInfo(one, one2Expr);
@@ -243,103 +244,5 @@ namespace FluentNHibernate.Automapping
             return null;
         }
     }
-}
-
-namespace FluentNHibernate.Automapping
-{
-    public enum RelationType
-    {
-        None,
-        OneToOne,
-        OneToMany,
-        ManyToOne,
-        ManyToMany
-    }
-
-    public enum CollectionMapType
-    {
-        Unknown = 0,
-        Set,
-        Bag,
-        List
-    }
-
-    public enum AssociationType
-    {
-        Unknown = 0,
-        Unidirectional,
-        Bidirectional
-    }
-
-    public abstract class RelationMetadata
-    {
-        public abstract RelationType Type { get; }
-
-        public Type RelatedModelType { get; set; }
-
-        public PropertyInfo RelatedModelProperty { get; set; }
-
-        public PropertyInfo RelatedModelIdProperty { get; set; }
-
-        public AssociationType AssociationType { get; set; }
-
-        public FieldInfo Field { get; set; }
-
-        public string ParameterName { get; set; }
-
-        public PropertyInfo Property { get; set; }
-
-    }
-
-    public class NoneRelationMetadata : RelationMetadata
-    {
-        public override RelationType Type { get { return RelationType.None; } }
-    }
-
-    public abstract class OneRelationMetadata : RelationMetadata
-    {
-        public PropertyInfo SyntheticProperty { get; set; }
-
-        public FieldInfo SyntheticField { get; set; }
-
-        public int? SyntheticPropertyMaxLength { get; set; }
-
-        public bool IsSyntheticPropertyTypeRequired { get; set; }
-
-        public MethodInfo SetMethod { get; set; }
-
-        public MethodInfo UnsetMethod { get; set; }
-    }
-
-    public class OneToOneRelationMetadata : OneRelationMetadata
-    {
-        public override RelationType Type { get { return RelationType.OneToOne; } }
-    }
-
-    public class ManyToOneRelationMetadata : OneRelationMetadata
-    {
-        public override RelationType Type { get { return RelationType.ManyToOne; } }
-
-        public MethodInfo RelatedModelRemoveMethod { get; set; }
-    }
-
-    public abstract class CollectionRelationMetadata : RelationMetadata
-    {
-        public CollectionMapType CollectionMapType { get; set; }
-
-        public MethodInfo AddMethod { get; set; }
-
-        public MethodInfo RemoveMethod { get; set; }
-    }
-
-    public class OneToManyRelationMetadata : CollectionRelationMetadata
-    {
-        public override RelationType Type { get { return RelationType.OneToMany; } }
-    }
-
-    public class ManyToManyRelationMetadata : CollectionRelationMetadata
-    {
-        public override RelationType Type { get { return RelationType.ManyToMany; } }
-    }	
 }
 

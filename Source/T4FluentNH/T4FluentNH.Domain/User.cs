@@ -6,8 +6,11 @@ using System.Threading.Tasks;
 
 namespace T4FluentNH.Domain
 {
-    public class User : IUser
+    public class User<TOrganization> : Entity
+        where TOrganization: IOrganization
     {
-        public int Id { get; set; }
+        public virtual TOrganization Organization { get; set; }
+
+        public int OrganizationId { get; set; }
     }
 }

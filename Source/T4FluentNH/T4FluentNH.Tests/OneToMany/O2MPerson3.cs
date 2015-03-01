@@ -4,7 +4,7 @@ using FluentNHibernate.Automapping.Alterations;
 
 namespace T4FluentNH.Tests.OneToMany
 {
-    public partial class O2MPerson3 : Entity
+    public partial class O2MPerson3 : Domain.Entity
     {
         public virtual string Name { get; set; }
 
@@ -16,7 +16,7 @@ namespace T4FluentNH.Tests.OneToMany
         }
     }
 
-    public partial class O2MCar3 : Entity
+    public partial class O2MCar3 : Domain.Entity
     {
         public virtual string Model { get; set; }
 

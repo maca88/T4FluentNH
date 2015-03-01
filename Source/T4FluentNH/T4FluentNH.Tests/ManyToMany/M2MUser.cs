@@ -8,7 +8,7 @@ using FluentNHibernate.Automapping.Alterations;
 
 namespace T4FluentNH.Tests.ManyToMany
 {
-    public partial class M2MUser : Entity
+    public partial class M2MUser : Domain.Entity
     {
         public virtual string Name { get; set; }
 
@@ -27,7 +27,7 @@ namespace T4FluentNH.Tests.ManyToMany
         }
     }
 
-    public partial class TestM2MRole : Entity
+    public partial class TestM2MRole : Domain.Entity
     {
         public virtual ISet<M2MUser> Users
         {

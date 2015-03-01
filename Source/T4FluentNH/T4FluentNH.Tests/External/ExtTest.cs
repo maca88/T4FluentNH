@@ -7,7 +7,7 @@ using T4FluentNH.Domain;
 
 namespace T4FluentNH.Tests.External
 {
-    public partial class ExtTest : Entity
+    public partial class ExtTest : Domain.Entity
     {
         public virtual IUser User
         {

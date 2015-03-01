@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace T4FluentNH.Tests.Generics
 {
-    public partial class GenRole : Entity
+    public partial class GenRole : Domain.Entity
     {
         public virtual string Name { get; set; }
 

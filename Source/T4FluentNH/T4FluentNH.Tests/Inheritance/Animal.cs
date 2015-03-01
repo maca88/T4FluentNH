@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace T4FluentNH.Tests.Inheritance
 {
-    public abstract partial class Animal : Entity
+    public abstract partial class Animal : Domain.Entity
     {
         public virtual string Name { get; set; }
 

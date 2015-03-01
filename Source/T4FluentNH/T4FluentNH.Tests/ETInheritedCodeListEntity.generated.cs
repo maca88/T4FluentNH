@@ -6,6 +6,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using FluentNHibernate.Automapping;
+using T4FluentNH.Metadata;
 namespace T4FluentNH.Tests.EntityTypes
 {
 	[GeneratedCode("T4Template", "1.0")]

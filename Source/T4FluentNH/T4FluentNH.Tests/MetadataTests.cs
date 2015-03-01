@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using FluentNHibernate.Automapping;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using T4FluentNH.Metadata;
 using T4FluentNH.Tests.ManyToOne;
 using T4FluentNH.Tests.OneToMany;
 

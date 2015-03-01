@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Settings>
-  <BaseEntityType>T4FluentNH.Tests.IEntity</BaseEntityType>
+  <BaseEntityType>T4FluentNH.Domain.IEntity</BaseEntityType>
   <EntityTypes>
     <EntityType>
       <DerivedFromType>T4FluentNH.Tests.CodeList</DerivedFromType>
@@ -19,7 +19,7 @@
       </KeyColumn>
     </EntityType>
     <EntityType>
-      <DerivedFromType>T4FluentNH.Tests.Entity</DerivedFromType>
+      <DerivedFromType>T4FluentNH.Domain.Entity</DerivedFromType>
       <IdentifierPropertyName>Id</IdentifierPropertyName>
       <IdentifierPropertyType>System.Int32</IdentifierPropertyType>
       <KeyColumn>

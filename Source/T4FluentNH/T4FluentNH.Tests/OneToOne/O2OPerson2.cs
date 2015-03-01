@@ -3,7 +3,7 @@
 namespace T4FluentNH.Tests.OneToOne
 {
     //The right way to do one to one (1..0 --- 1..0) between two classes
-    public partial class O2OPerson2 : Entity
+    public partial class O2OPerson2 : Domain.Entity
     {
         public virtual string Name { get; set; }
 
@@ -15,7 +15,7 @@ namespace T4FluentNH.Tests.OneToOne
         }
     }
 
-    public partial class O2OIdentityCard2 : Entity
+    public partial class O2OIdentityCard2 : Domain.Entity
     {
         public virtual string Code { get; set; }
 
