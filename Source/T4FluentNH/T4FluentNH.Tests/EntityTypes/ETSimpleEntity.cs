@@ -10,10 +10,22 @@ namespace T4FluentNH.Tests.EntityTypes
     {
         public virtual string Name { get; set; }
 
-        public virtual ETCodeListEntity CodeListEntity { get { return _codeListEntity; } set { SetField(ref _codeListEntity, value, ref _codeListEntityCode); } }
+        public virtual ETCodeListEntity CodeListEntity
+        {
+            get { return _codeListEntity; }
+            set { SetField(ref _codeListEntity, value, ref _codeListEntityCode); }
+        }
 
-        public virtual ETInheritedCodeListEntity InheritCodeListEntity { get { return _inheritCodeListEntity; } set { SetField(ref _inheritCodeListEntity, value, ref _inheritCodeListEntityCode); } }
+        public virtual ETInheritedCodeListEntity InheritCodeListEntity
+        {
+            get { return _inheritCodeListEntity; }
+            set { SetField(ref _inheritCodeListEntity, value, ref _inheritCodeListEntityCode); }
+        }
 
-        public virtual ETLengthCodeList LengthCodeListEntity { get { return _lengthCodeListEntity; } set { SetField(ref _lengthCodeListEntity, value, ref _lengthCodeListEntityCode); } }
+        public virtual ETLengthCodeList LengthCodeListEntity
+        {
+            get { return _lengthCodeListEntity; }
+            set { SetField(ref _lengthCodeListEntity, value, ref _lengthCodeListEntityCode); }
+        }
     }
 }

@@ -27,7 +27,11 @@ namespace T4FluentNH.Tests.OneToMany
         public virtual string Model { get; set; }
 
         [NotNull]
-        public virtual O2MPerson Owner { get { return _owner; } set { SetField(ref _owner, value, ref _ownerId); } }
+        public virtual O2MPerson Owner
+        {
+            get { return _owner; }
+            set { SetField(ref _owner, value, ref _ownerId); }
+        }
 
     }
 

@@ -12,7 +12,11 @@ namespace T4FluentNH.Tests.Naming
         public virtual string Test { get; set; }
 
         [AsOneToOne]
-        public virtual Switch Switch { get { return _switch; } set { SetField(ref _switch, value, ref _switchId); } }
+        public virtual Switch Switch
+        {
+            get { return _switch; }
+            set { SetField(ref _switch, value, ref _switchId); }
+        }
 
         public virtual ISet<Use> Uses
         {
@@ -26,14 +30,22 @@ namespace T4FluentNH.Tests.Naming
         public virtual string Name { get; set; }
 
         [AsOneToOne]
-        public virtual Case Case { get { return _case; } set { SetField(ref _case, value, ref _caseId); } }
+        public virtual Case Case
+        {
+            get { return _case; }
+            set { SetField(ref _case, value, ref _caseId); }
+        }
     }
 
     public partial class Use : Entity
     {
         public virtual string Name { get; set; }
 
-        public virtual Case Case { get { return _case; } set { SetField(ref _case, value, ref _caseId); } }
+        public virtual Case Case
+        {
+            get { return _case; }
+            set { SetField(ref _case, value, ref _caseId); }
+        }
 
     }
 }

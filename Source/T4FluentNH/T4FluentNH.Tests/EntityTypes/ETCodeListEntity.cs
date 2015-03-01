@@ -12,7 +12,11 @@ namespace T4FluentNH.Tests.EntityTypes
     {
         public virtual string Name { get; set; }
 
-        public virtual ETSimpleEntity SimpleEntity { get { return _simpleEntity; } set { SetField(ref _simpleEntity, value, ref _simpleEntityId); } }
+        public virtual ETSimpleEntity SimpleEntity
+        {
+            get { return _simpleEntity; }
+            set { SetField(ref _simpleEntity, value, ref _simpleEntityId); }
+        }
         
     }
 

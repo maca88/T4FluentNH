@@ -1737,11 +1737,17 @@ public class DomainModelWrapper
     {
         if (relation.GenerateSyntheticProperty)
         {
-            var set = string.Format("{2}set {{ SetField(ref {0}, value, ref {1}); }}", relation.FieldName,
+		var body = string.Format(@"
+		{{
+			{0}
+			{1}
+		}}",
+			string.Format("get {{ return {0}; }}", relation.FieldName),
+			string.Format("{2}set {{ SetField(ref {0}, value, ref {1}); }}", 
+				relation.FieldName,
                 relation.SyntheticFieldName,
-                (GlobalContainer.Settings.Strict ? "protected internal " : ""));
-            GlobalContainer.VSHelper.SetSetter(prop, set);
-            GlobalContainer.VSHelper.SetGetter(prop, string.Format("get {{ return {0}; }}", relation.FieldName));
+                (GlobalContainer.Settings.Strict ? "protected internal " : "")));
+			GlobalContainer.VSHelper.SetPropertyBody(prop, body);	
         }
         else
         {

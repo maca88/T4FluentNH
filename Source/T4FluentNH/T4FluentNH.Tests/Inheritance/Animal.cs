@@ -10,6 +10,10 @@ namespace T4FluentNH.Tests.Inheritance
     {
         public virtual string Name { get; set; }
 
-        public virtual Owner Owner { get { return _owner; } set { SetField(ref _owner, value, ref _ownerId); } }
+        public virtual Owner Owner
+        {
+            get { return _owner; }
+            set { SetField(ref _owner, value, ref _ownerId); }
+        }
     }
 }
