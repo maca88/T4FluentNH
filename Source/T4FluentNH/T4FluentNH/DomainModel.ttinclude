@@ -16,6 +16,7 @@ GlobalContainer.KnownNamespaces = new HashSet<string>
         "System.Collections.Generic",
         "System.ComponentModel",
         "System.CodeDom.Compiler",
+		"System.Linq",
         "System.Linq.Expressions",
         "System.Reflection",
         "FluentNHibernate.Automapping",
@@ -350,6 +351,118 @@ namespace <#=type.Namespace.FullName#>
 	{
 
 <#
+	if (GlobalContainer.Settings.GenerateMetadata.Relations)
+	{
+#>
+		#region RelationsMetadata
+
+		public<#=(type.IsDerivedEntity ? " new" : "")#> static readonly Dictionary<string, RelationMetadata> RelationsMetadata =
+            new Dictionary<string, RelationMetadata>
+            {
+<#
+		foreach (var relation in type.RelatedModels.Where(o => o.Property != null))
+		{
+		    switch (relation.Type)
+		    {
+				case ModelRelationType.OneToMany:
+				case ModelRelationType.ManyToMany:
+		            var collectionRelation = (CollectionModelRelation)relation;
+		            var classPrefix = ModelRelationType.OneToMany == relation.Type
+		                ? "OneToMany"
+		                : "ManyToMany";
+#>
+                {"<#=relation.PropertyName #>", new <#=classPrefix #>RelationMetadata
+                {
+					RelatedModelType = typeof(<#=relation.RelatedModelTypeName#>),
+<#
+		            if (!string.IsNullOrEmpty(relation.PathInRelatedModel))
+		            {
+#>
+					RelatedModelProperty = typeof(<#=relation.RelatedModelTypeName#>).GetProperty("<#=relation.PathInRelatedModel#>"),
+<#
+		            }
+#>
+					RelatedModelIdProperty = typeof(<#=relation.RelatedModelTypeName#>).GetProperty("<#=relation.RelatedModelIdPropertyName#>"),
+					AssociationType = AssociationType.<#=relation.AssociationType#>,
+					Field = typeof(<#=type.FullClassName#>).GetField("<#=relation.FieldName#>", BindingFlags.Instance | BindingFlags.NonPublic),
+					ParameterName = "<#=relation.ParameterName#>",
+					Property = typeof(<#=type.FullClassName#>).GetProperty("<#=relation.PropertyName#>"),
+<#
+		            if (relation.AssociationType == AssociationType.Bidirectional)
+		            {
+#>
+                    AddMethod = typeof(<#=type.FullClassName#>).GetMethods().FirstOrDefault(o => o.Name == "<#=collectionRelation.AddMethodName#>" && o.GetParameters().Length == 1 && o.GetParameters()[0].ParameterType == typeof(<#=collectionRelation.RelatedModelTypeName#>)),
+					RemoveMethod = typeof(<#=type.FullClassName#>).GetMethods().FirstOrDefault(o => o.Name == "<#=collectionRelation.RemoveMethodName#>" && o.GetParameters().Length == 1 && o.GetParameters()[0].ParameterType == typeof(<#=collectionRelation.RelatedModelTypeName#>)),
+<#
+		            }
+#>
+					CollectionMapType = CollectionMapType.<#=collectionRelation.CollectionMapType.ToString()#>,
+					
+                }},
+		
+<#
+					break;
+				case ModelRelationType.OneToOne:
+				case ModelRelationType.ManyToOne:
+		            var oneRelation = (OneModelRelation)relation;
+					var manyToOneRelation = relation as ManyToOneModelRelation;
+		            var oneClassPrefix = ModelRelationType.OneToOne == relation.Type
+		                ? "OneToOne"
+		                : "ManyToOne";
+#>
+                {"<#=relation.PropertyName #>", new <#=oneClassPrefix #>RelationMetadata
+                {
+					RelatedModelType = typeof(<#=relation.RelatedModelTypeName#>),
+<#
+		            if (!string.IsNullOrEmpty(relation.PathInRelatedModel))
+		            {
+#>
+					RelatedModelProperty = typeof(<#=relation.RelatedModelTypeName#>).GetProperty("<#=relation.PathInRelatedModel#>"),
+<#
+		            }
+#>
+					RelatedModelIdProperty = typeof(<#=relation.RelatedModelTypeName#>).GetProperty("<#=relation.RelatedModelIdPropertyName#>"),
+					AssociationType = AssociationType.<#=relation.AssociationType#>,
+					Field = typeof(<#=type.FullClassName#>).GetField("<#=relation.FieldName#>", BindingFlags.Instance | BindingFlags.NonPublic),
+					ParameterName = "<#=relation.ParameterName#>",
+					Property = typeof(<#=type.FullClassName#>).GetProperty("<#=relation.PropertyName#>"),
+<#
+		            if (relation.AssociationType == AssociationType.Bidirectional)
+		            {
+#>
+					SetMethod = typeof(<#=type.FullClassName #>).GetMethods().FirstOrDefault(o => o.Name == "<#=oneRelation.SetMethodName #>" && o.GetParameters().Length == 1 && o.GetParameters()[0].ParameterType == typeof(<#=oneRelation.RelatedModelTypeName #>)),
+					UnsetMethod = typeof(<#=type.FullClassName #>).GetMethods().FirstOrDefault(o => o.Name == "<#=oneRelation.UnsetMethodName #>" && o.GetParameters().Length == 0),
+<#
+		            }
+		            if (!string.IsNullOrEmpty(oneRelation.SyntheticPropertyName))
+		            {
+#>
+					SyntheticProperty = typeof(<#=type.FullClassName#>).GetProperty("<#=oneRelation.SyntheticPropertyName#>"),
+					SyntheticField = typeof(<#=type.FullClassName#>).GetField("<#=oneRelation.SyntheticFieldName#>", BindingFlags.Instance | BindingFlags.NonPublic),
+					SyntheticPropertyMaxLength = <#=(string.IsNullOrEmpty(oneRelation.SyntheticPropertyMaxLength) ? "null" : oneRelation.SyntheticPropertyMaxLength)#>,
+					IsSyntheticPropertyTypeRequired = <#=(oneRelation.IsSyntheticPropertyTypeRequired ? "true" : "false")#>,
+<#
+		            }
+		            if (manyToOneRelation != null && !string.IsNullOrEmpty(manyToOneRelation.RelatedTypeRemoveMethodName))
+					{
+#>
+					RelatedModelRemoveMethod = typeof(<#=relation.RelatedModelTypeName#>).GetMethods().FirstOrDefault(o => o.Name == "<#=manyToOneRelation.RelatedTypeRemoveMethodName#>" && o.GetParameters().Length == 1 && o.GetParameters()[0].ParameterType == typeof(<#=type.FullClassName#>)),
+<#
+					}
+#>					
+                }},
+		
+<#
+		            break;
+		    }
+		}
+#>
+            };
+
+		#endregion
+
+<#
+	}
     if (GlobalContainer.Components.ContainsKey(type.FullName))
     {
 #>
@@ -824,6 +937,111 @@ namespace FluentNHibernate.Automapping
     }
 }
 
+<#
+	if (GlobalContainer.Settings.GenerateMetadata.Relations)
+	{
+#>
+namespace FluentNHibernate.Automapping
+{
+    public enum RelationType
+    {
+        None,
+        OneToOne,
+        OneToMany,
+        ManyToOne,
+        ManyToMany
+    }
+
+    public enum CollectionMapType
+    {
+        Unknown = 0,
+        Set,
+        Bag,
+        List
+    }
+
+    public enum AssociationType
+    {
+        Unknown = 0,
+        Unidirectional,
+        Bidirectional
+    }
+
+    public abstract class RelationMetadata
+    {
+        public abstract RelationType Type { get; }
+
+        public Type RelatedModelType { get; set; }
+
+        public PropertyInfo RelatedModelProperty { get; set; }
+
+        public PropertyInfo RelatedModelIdProperty { get; set; }
+
+        public AssociationType AssociationType { get; set; }
+
+        public FieldInfo Field { get; set; }
+
+        public string ParameterName { get; set; }
+
+        public PropertyInfo Property { get; set; }
+
+    }
+
+    public class NoneRelationMetadata : RelationMetadata
+    {
+        public override RelationType Type { get { return RelationType.None; } }
+    }
+
+    public abstract class OneRelationMetadata : RelationMetadata
+    {
+        public PropertyInfo SyntheticProperty { get; set; }
+
+        public FieldInfo SyntheticField { get; set; }
+
+        public int? SyntheticPropertyMaxLength { get; set; }
+
+        public bool IsSyntheticPropertyTypeRequired { get; set; }
+
+        public MethodInfo SetMethod { get; set; }
+
+        public MethodInfo UnsetMethod { get; set; }
+    }
+
+    public class OneToOneRelationMetadata : OneRelationMetadata
+    {
+        public override RelationType Type { get { return RelationType.OneToOne; } }
+    }
+
+    public class ManyToOneRelationMetadata : OneRelationMetadata
+    {
+        public override RelationType Type { get { return RelationType.ManyToOne; } }
+
+        public MethodInfo RelatedModelRemoveMethod { get; set; }
+    }
+
+    public abstract class CollectionRelationMetadata : RelationMetadata
+    {
+        public CollectionMapType CollectionMapType { get; set; }
+
+        public MethodInfo AddMethod { get; set; }
+
+        public MethodInfo RemoveMethod { get; set; }
+    }
+
+    public class OneToManyRelationMetadata : CollectionRelationMetadata
+    {
+        public override RelationType Type { get { return RelationType.OneToMany; } }
+    }
+
+    public class ManyToManyRelationMetadata : CollectionRelationMetadata
+    {
+        public override RelationType Type { get { return RelationType.ManyToMany; } }
+    }	
+}
+<#
+	}
+#>
+
 <#+
 public enum ModelRelationType
 {
@@ -1096,6 +1314,16 @@ public class DomainModelWrapper
 
 	public EntityType EntityType { get; private set; }
 
+    public bool IsDerivedEntity
+    {
+        get
+        {
+            return
+                CodeClass.Bases.OfType<CodeClass2>()
+                    .Any(o => o.IsDerivedFrom[GlobalContainer.Settings.BaseEntityType]);
+        }
+    }
+
     public string FullClassName
     {
         get
@@ -1296,8 +1524,10 @@ public class DomainModelWrapper
 	    if (!externalType)
 	    {
 	        if(!GlobalContainer.ProjectTypes.ContainsKey(typeFullName))
-		    { 
-			    GlobalContainer.VSHelper.Warning(String.Format("Type {0} does not exists in the current project", typeFullName));
+		    {
+				if(!typeFullName.StartsWith("System."))
+					GlobalContainer.VSHelper.Warning(String.Format("Type {0} does not exists in the current project, skiping relation for property '{1}' in '{2}'", 
+					typeFullName, prop.Name, FullClassName));
 		        return new NoneModelRelation();
 		    }
             //Skip further processing if the related type is not an entity
@@ -1561,6 +1791,11 @@ public class DomainModelWrapper
         public List<string> CustomAttributes { get; set; } 
     }
 
+	public class GenerateMetadata
+    {
+        public bool Relations { get; set; }
+    }
+
     public class XmlSettings
     {
         public static XmlSettings Load(string path)
@@ -1612,6 +1847,10 @@ public class DomainModelWrapper
                         Pattern = o.XPathSelectElement("Pattern").Value,
                         Replace = o.XPathSelectElement("Replace").Value,
                     })),
+				GenerateMetadata = new GenerateMetadata
+				{
+				  Relations  = xElement.XPathSelectElement("/GenerateMetadata/Relations").Value.ToUpperInvariant() == "TRUE"
+				},
                 IgnoreTypes = new HashSet<string>(xElement.XPathSelectElements("/IgnoreTypes//IgnoreType").Select(o => o.Value)),
                 NotNullAttribute = xElement.XPathSelectElement("/NotNullAttribute").Value,
                 LengthAttribute = xElement.XPathSelectElement("/LengthAttribute").Value,
@@ -1667,7 +1906,7 @@ public class DomainModelWrapper
 
         public SyntheticProperties SyntheticProperties { get; set; }
 
-        
+        public GenerateMetadata GenerateMetadata { get; set; }
 
     }
 

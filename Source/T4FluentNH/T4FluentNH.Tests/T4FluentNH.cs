@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.CodeDom.Compiler;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using FluentNHibernate.Automapping;
@@ -242,5 +243,103 @@ namespace FluentNHibernate.Automapping
             return null;
         }
     }
+}
+
+namespace FluentNHibernate.Automapping
+{
+    public enum RelationType
+    {
+        None,
+        OneToOne,
+        OneToMany,
+        ManyToOne,
+        ManyToMany
+    }
+
+    public enum CollectionMapType
+    {
+        Unknown = 0,
+        Set,
+        Bag,
+        List
+    }
+
+    public enum AssociationType
+    {
+        Unknown = 0,
+        Unidirectional,
+        Bidirectional
+    }
+
+    public abstract class RelationMetadata
+    {
+        public abstract RelationType Type { get; }
+
+        public Type RelatedModelType { get; set; }
+
+        public PropertyInfo RelatedModelProperty { get; set; }
+
+        public PropertyInfo RelatedModelIdProperty { get; set; }
+
+        public AssociationType AssociationType { get; set; }
+
+        public FieldInfo Field { get; set; }
+
+        public string ParameterName { get; set; }
+
+        public PropertyInfo Property { get; set; }
+
+    }
+
+    public class NoneRelationMetadata : RelationMetadata
+    {
+        public override RelationType Type { get { return RelationType.None; } }
+    }
+
+    public abstract class OneRelationMetadata : RelationMetadata
+    {
+        public PropertyInfo SyntheticProperty { get; set; }
+
+        public FieldInfo SyntheticField { get; set; }
+
+        public int? SyntheticPropertyMaxLength { get; set; }
+
+        public bool IsSyntheticPropertyTypeRequired { get; set; }
+
+        public MethodInfo SetMethod { get; set; }
+
+        public MethodInfo UnsetMethod { get; set; }
+    }
+
+    public class OneToOneRelationMetadata : OneRelationMetadata
+    {
+        public override RelationType Type { get { return RelationType.OneToOne; } }
+    }
+
+    public class ManyToOneRelationMetadata : OneRelationMetadata
+    {
+        public override RelationType Type { get { return RelationType.ManyToOne; } }
+
+        public MethodInfo RelatedModelRemoveMethod { get; set; }
+    }
+
+    public abstract class CollectionRelationMetadata : RelationMetadata
+    {
+        public CollectionMapType CollectionMapType { get; set; }
+
+        public MethodInfo AddMethod { get; set; }
+
+        public MethodInfo RemoveMethod { get; set; }
+    }
+
+    public class OneToManyRelationMetadata : CollectionRelationMetadata
+    {
+        public override RelationType Type { get { return RelationType.OneToMany; } }
+    }
+
+    public class ManyToManyRelationMetadata : CollectionRelationMetadata
+    {
+        public override RelationType Type { get { return RelationType.ManyToMany; } }
+    }	
 }
 

@@ -63,6 +63,9 @@
       <Replace>$1Use</Replace>
     </Singularize>
   </Singularization>
+  <GenerateMetadata>
+      <Relations>true</Relations>
+  </GenerateMetadata>
   <NotNullAttribute>T4FluentNH.Tests.NotNullAttribute</NotNullAttribute>
   <LengthAttribute>T4FluentNH.Tests.LengthAttribute</LengthAttribute>
   <DefaultCollectionMapType>Set</DefaultCollectionMapType>

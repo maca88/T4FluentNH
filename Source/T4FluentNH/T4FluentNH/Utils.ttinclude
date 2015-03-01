@@ -413,6 +413,17 @@ public class VisualStudioHelper : AutomationHelper
 		return result;
 	}
 
+	public List<string> GetBaseTypeFullNames(CodeClass2 cls)
+	{
+		var result = new List<string>();
+		for(var i=1; i <= (cls.Bases.Count); i++)
+		{
+			result.Add(cls.Bases.Item(i).FullName);
+		}
+		return result;
+	}
+
+
 	public bool IsController(CodeClass2 type)
 	{
 		// Ignore any class which name doesn't end with "Controller"

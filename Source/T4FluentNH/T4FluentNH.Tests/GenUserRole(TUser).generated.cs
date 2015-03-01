@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.CodeDom.Compiler;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using FluentNHibernate.Automapping;
@@ -10,6 +11,30 @@ namespace T4FluentNH.Tests.Generics
 	[GeneratedCode("T4Template", "1.0")]
 	public partial class GenUserRole<TUser>
 	{
+
+		#region RelationsMetadata
+
+		public new static readonly Dictionary<string, RelationMetadata> RelationsMetadata =
+            new Dictionary<string, RelationMetadata>
+            {
+                {"Role", new ManyToOneRelationMetadata
+                {
+					RelatedModelType = typeof(GenRole),
+					RelatedModelIdProperty = typeof(GenRole).GetProperty("Id"),
+					AssociationType = AssociationType.Unidirectional,
+					Field = typeof(GenUserRole<TUser>).GetField("_role", BindingFlags.Instance | BindingFlags.NonPublic),
+					ParameterName = "role",
+					Property = typeof(GenUserRole<TUser>).GetProperty("Role"),
+					SyntheticProperty = typeof(GenUserRole<TUser>).GetProperty("RoleId"),
+					SyntheticField = typeof(GenUserRole<TUser>).GetField("_roleId", BindingFlags.Instance | BindingFlags.NonPublic),
+					SyntheticPropertyMaxLength = null,
+					IsSyntheticPropertyTypeRequired = false,
+					
+                }},
+		
+            };
+
+		#endregion
 
 		#region Role
 

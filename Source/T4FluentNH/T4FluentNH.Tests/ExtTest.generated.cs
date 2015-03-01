@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.CodeDom.Compiler;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using FluentNHibernate.Automapping;
@@ -10,6 +11,30 @@ namespace T4FluentNH.Tests.External
 	[GeneratedCode("T4Template", "1.0")]
 	public partial class ExtTest
 	{
+
+		#region RelationsMetadata
+
+		public new static readonly Dictionary<string, RelationMetadata> RelationsMetadata =
+            new Dictionary<string, RelationMetadata>
+            {
+                {"User", new ManyToOneRelationMetadata
+                {
+					RelatedModelType = typeof(T4FluentNH.Domain.IUser),
+					RelatedModelIdProperty = typeof(T4FluentNH.Domain.IUser).GetProperty("Id"),
+					AssociationType = AssociationType.Unidirectional,
+					Field = typeof(ExtTest).GetField("_user", BindingFlags.Instance | BindingFlags.NonPublic),
+					ParameterName = "user",
+					Property = typeof(ExtTest).GetProperty("User"),
+					SyntheticProperty = typeof(ExtTest).GetProperty("UserId"),
+					SyntheticField = typeof(ExtTest).GetField("_userId", BindingFlags.Instance | BindingFlags.NonPublic),
+					SyntheticPropertyMaxLength = null,
+					IsSyntheticPropertyTypeRequired = false,
+					
+                }},
+		
+            };
+
+		#endregion
 
 		#region User
 

@@ -169,6 +169,7 @@
     <Compile Include="ManyToMany\M2MUser.cs" />
     <Compile Include="ManyToOne\M2OPerson.cs" />
     <Compile Include="ManyToOne\M2OPerson2.cs" />
+    <Compile Include="MetadataTests.cs" />
     <Compile Include="Naming\Case.cs" />
     <Compile Include="NHConfig.cs" />
     <Compile Include="NotNullAttribute.cs" />
