@@ -57,6 +57,12 @@
 //System.Diagnostics.Debugger.Launch();
 //System.Diagnostics.Debugger.Break();	
 
+var debug = false;
+
+
+var globalWatch = Stopwatch.StartNew();
+var stepWatch = debug ? Stopwatch.StartNew() : null;
+
 GlobalContainer.VSHelper = VSHelper;
 GlobalContainer.ProjectItems = VSHelper.GetAllProjectItems();
 GlobalContainer.ProjectTypes = VSHelper.GetAllTypes(GlobalContainer.ProjectItems);
@@ -78,19 +84,40 @@ if (GlobalContainer.Settings.GenerateMetadata.Relations)
 //reset static props
 GlobalContainer.Reset();
 
+if (debug)
+{
+    stepWatch.Stop();
+	VSHelper.Warning("Setting Global container: " + stepWatch.ElapsedMilliseconds);    
+}
+
+
 /*TODOS*/
 //TODO: Strict - do note that non public getter or setter are not serialized/deserialized by default with Json.net
 
 #region Overrides
+if (debug) 
+	stepWatch = Stopwatch.StartNew(); 
 
 //Get and save all overrides
 VSHelper.ProcessFiles(GlobalContainer.ProjectItems, (file, name) => VSHelper.ProcessTypes(file, (type, pItem) => 
     {
-		if(VSHelper.GetAttribute(type.Attributes, "System.CodeDom.Compiler.GeneratedCodeAttribute") != null)
-		{
-			GlobalContainer.GeneratedFiles.Add(type.FullName, pItem.FileNames[0]);
-			return;
-		}
+        if (VSHelper.GetAttribute(type.Attributes, "System.CodeDom.Compiler.GeneratedCodeAttribute") != null)
+        {
+            if (!GlobalContainer.EntityProjectItems.ContainsKey(type.FullName))
+                GlobalContainer.EntityProjectItems.Add(type.FullName, new EntityProjectItem(type.FullName));
+            GlobalContainer.EntityProjectItems[type.FullName].SetGeneratedFile(pItem);
+            return;
+        }
+        if(type.IsDerivedFrom[GlobalContainer.Settings.BaseEntityType] && !GlobalContainer.Settings.IgnoreTypes.Contains(type.FullName))
+        {
+			if (!GlobalContainer.EntityProjectItems.ContainsKey(type.FullName))
+                GlobalContainer.EntityProjectItems.Add(type.FullName, new EntityProjectItem(type.FullName));
+			GlobalContainer.EntityProjectItems[type.FullName].AddEntityFile(pItem);
+
+			GlobalContainer.DomainProjectItems.Add(pItem);
+
+            return;
+        }
         var mapOverride =
             type.ImplementedInterfaces.OfType<CodeElement>()
                 .FirstOrDefault(o => o.FullName.Contains("IAutoMappingOverride"));
@@ -103,7 +130,10 @@ VSHelper.ProcessFiles(GlobalContainer.ProjectItems, (file, name) => VSHelper.Pro
 
 		//VSHelper.Warning("Overrides found for type " + overrideType);
 
-		GlobalContainer.DomainOverrideFiles.Add(overrideType, pItem.FileNames[0]);
+		if (!GlobalContainer.EntityProjectItems.ContainsKey(overrideType))
+			GlobalContainer.EntityProjectItems.Add(overrideType, new EntityProjectItem(type.FullName));
+
+		GlobalContainer.EntityProjectItems[overrideType].AddOverrideFile(pItem);
 
         EntityType entityType = null;
 
@@ -207,8 +237,6 @@ VSHelper.ProcessFiles(GlobalContainer.ProjectItems, (file, name) => VSHelper.Pro
 
             var relatedProp = VSHelper.GetProperties(GlobalContainer.ProjectTypes[relatedPropType], true).FirstOrDefault(o => o.Name == relatedPropName);
             var assocType = relatedProp == null ? AssociationType.Unidirectional : AssociationType.Bidirectional;
-			if(relatedProp == null)
-				VSHelper.Warning("Type: " + relatedPropType + " Prop: " + relatedPropName + " MEbers: ");
             
             //Add oneToMany
 			GlobalContainer.Overrides[overrideType].Add(propName,
@@ -338,38 +366,41 @@ VSHelper.ProcessFiles(GlobalContainer.ProjectItems, (file, name) => VSHelper.Pro
 
 #endregion
 
+if (debug)
+{
+    stepWatch.Stop();
+	VSHelper.Warning("Process overrides: " + stepWatch.ElapsedMilliseconds);
+	stepWatch = Stopwatch.StartNew(); 
+}
+
 var manager = Manager.Create(Host, GenerationEnvironment);
 
-VSHelper.ProcessFiles(GlobalContainer.ProjectItems, (file, name) => 
+VSHelper.ProcessFiles(GlobalContainer.DomainProjectItems, (file, name) => 
 	VSHelper.ProcessTypes(file, (type, pItem) => 
 		{
 			if(VSHelper.GetAttribute(type.Attributes, "System.CodeDom.Compiler.GeneratedCodeAttribute") != null) return;
 			//VSHelper.GetAllCodeElementsOfType(type.)
 			if(!type.IsDerivedFrom[GlobalContainer.Settings.BaseEntityType] || GlobalContainer.Settings.IgnoreTypes.Contains(type.FullName)) return;
 			//VSHelper.Warning(pItem.get_FileNames(0) + " gener created: " + (GlobalContainer.GeneratedFiles.ContainsKey(type.FullName) ?  File.GetCreationTime(GlobalContainer.GeneratedFiles[type.FullName]).ToString() : "WTF") + " gener modif: " + (GlobalContainer.GeneratedFiles.ContainsKey(type.FullName) ?  File.GetLastWriteTime(GlobalContainer.GeneratedFiles[type.FullName]).ToString() : "WTF") + " real: " + File.GetLastWriteTime(pItem.get_FileNames(0)));
-			var domainModelModified = true;
+			
+		    var entityPItem = GlobalContainer.EntityProjectItems[type.FullName];
+			var domainModelModified = entityPItem.IsDirty();
 
-			/*
-			if(GlobalContainer.GeneratedFiles.ContainsKey(type.FullName) && File.GetLastWriteTime(GlobalContainer.GeneratedFiles[type.FullName]) >= File.GetLastWriteTime(pItem.get_FileNames(0))) //if there were no changes on domain model
-			{
-				if(
-					!GlobalContainer.DomainOverrideFiles.ContainsKey(type.FullName) || 
-					(
-						GlobalContainer.DomainOverrideFiles.ContainsKey(type.FullName) && File.GetLastWriteTime(GlobalContainer.GeneratedFiles[type.FullName]) >= File.GetLastWriteTime(GlobalContainer.DomainOverrideFiles[type.FullName])
-					)) //if override mapping for domain model was changed
-                {
-					VSHelper.Warning(string.Format("No changes made on type '{0}'", type.FullName));
-					manager.KeepGeneratedFile(GlobalContainer.GeneratedFiles[type.FullName]);
-					return;
-                }
-				domainModelModified = false;
-			}*/
+		    if (!domainModelModified)
+		    {
+		        manager.KeepGeneratedFile(entityPItem.GeneratedFileAbsoultePath);
+		    }
+		    else
+		    {
+		        VSHelper.Warning(string.Format("Type '{0}' was modified", type.FullName));
+		    }
 
 		    var domainClass = new DomainModelWrapper
 		    {
 		        CodeClass = type,
 		        ProjectItem = pItem,
 				WasModified = domainModelModified,
+				SettingsXml = entityPItem.Serialize()
 		    };
 
 			if(!GlobalContainer.DomainClasses.ContainsKey(type.FullName))
@@ -379,17 +410,37 @@ VSHelper.ProcessFiles(GlobalContainer.ProjectItems, (file, name) =>
 			//Warning(string.Format("Processing type: '{0}' with parameter WasModified = {1}", type.FullName, domainModelModified));
 		}));
 
-//Initialize All DomainClasses
-foreach (var domainClass in GlobalContainer.DomainClasses)
+if (debug)
 {
-    domainClass.Value.Initialize();	
+    stepWatch.Stop();
+    VSHelper.Warning("Filling domian classes: " + stepWatch.ElapsedMilliseconds);
+    stepWatch = Stopwatch.StartNew();
+}
+
+//Initialize All DomainClasses
+foreach (var domainClass in GlobalContainer.DomainClasses.Where(o => o.Value.WasModified))
+{
+	
+	var typeWatch = debug ? Stopwatch.StartNew() : null; 
+    domainClass.Value.Initialize();
+    if (debug)
+    {
+        typeWatch.Stop();
+		VSHelper.Warning("Initializing domian class: " + domainClass.Value.FileName + ", Time: " + typeWatch.ElapsedMilliseconds);
+    }
+	
+}
+if (debug)
+{
+    stepWatch.Stop();
+    VSHelper.Warning("Initializing domian classes: " + stepWatch.ElapsedMilliseconds);
 }
 
 manager.StartHeader(); 
 #>
 //----------------------
 // <auto-generated>
-// Auto gnerated code
+//	Generated by T4FluentNH.
 // </auto-generated>
 //----------------------
 // ReSharper disable All
@@ -402,10 +453,11 @@ using <#=ns#>;
 }
 manager.EndBlock(); 
 
-foreach(var type in GlobalContainer.DomainClasses.Values)
+foreach(var type in GlobalContainer.DomainClasses.Values.Where(o => o.WasModified))
 {
 	manager.StartNewFile(string.Format("{0}.generated.cs", type.FileName)); 
 #>
+//<#=type.SettingsXml#>
 namespace <#=type.Namespace.FullName#>
 {
 	[GeneratedCode("T4Template", "1.0")]
@@ -770,7 +822,13 @@ namespace <#=type.Namespace.FullName#>
 <#
 	manager.EndBlock();
 }
-manager.Process(true); 
+manager.Process(true);
+
+
+globalWatch.Stop();
+VSHelper.Warning(string.Format("T4FluentNH finished in {0} ms.", globalWatch.ElapsedMilliseconds)); 
+
+
 #>
 
 namespace FluentNHibernate.Automapping
@@ -1172,6 +1230,124 @@ public class ManyToManyModelRelation : CollectionModelRelation
     public override ModelRelationType Type { get { return ModelRelationType.ManyToMany; } }
 }
 
+[Serializable]
+public class EntityProjectItem
+{
+	[System.Xml.Serialization.XmlIgnoreAttribute]
+    private readonly List<ProjectItem> _entityProjectItems = new List<ProjectItem>();
+	[System.Xml.Serialization.XmlIgnoreAttribute]
+	private readonly List<ProjectItem> _overrideProjectItems = new List<ProjectItem>();
+	[System.Xml.Serialization.XmlIgnoreAttribute]
+	private ProjectItem _generatedItem;
+
+	public EntityProjectItem() {}
+
+    public EntityProjectItem(string fullName)
+    {
+        EntityFullName = fullName;
+        OverrideFilePaths = new List<string>();
+		EntityFilePaths = new List<string>();
+    }
+
+	public string EntityFullName { get; set; }
+
+    public List<string> EntityFilePaths { get; set; }
+
+	public List<string> OverrideFilePaths { get; set; }
+
+	public string GeneratedFilePath { get; set; }
+
+	[System.Xml.Serialization.XmlIgnoreAttribute]
+	public string GeneratedFileAbsoultePath { get { return _generatedItem.FileNames[0]; } }
+
+    public void SetGeneratedFile(ProjectItem pItem)
+    {
+        _generatedItem = pItem;
+        GeneratedFilePath = GlobalContainer.VSHelper.GetRelativePathToCurrentProject(pItem);
+    }
+
+    public void AddEntityFile(ProjectItem pItem)
+    {
+        _entityProjectItems.Add(pItem);
+        EntityFilePaths.Add(GlobalContainer.VSHelper.GetRelativePathToCurrentProject(pItem));
+    }
+
+	public void AddOverrideFile(ProjectItem pItem)
+    {
+        _overrideProjectItems.Add(pItem);
+        OverrideFilePaths.Add(GlobalContainer.VSHelper.GetRelativePathToCurrentProject(pItem));
+    }
+
+    public bool IsDirty()
+    {
+        if (string.IsNullOrEmpty(GeneratedFilePath)) return true;
+
+		//Get EntityProjectItem instance from the generated file
+        var genFileText = File.ReadAllText(GetFullPathByRelative(GeneratedFilePath));
+        var match = Regex.Match(genFileText, "//(<EntityProjectItem.*</EntityProjectItem>)");
+        if (!match.Success) return true;
+        var xml = match.Groups[1].Value;
+		var serializer = new System.Xml.Serialization.XmlSerializer(typeof(EntityProjectItem));
+		EntityProjectItem result;
+
+		using (var reader = new StringReader(xml))
+		{
+			result = (EntityProjectItem)serializer.Deserialize(reader);
+		}
+
+		//Check if any of the files was renamed or deleted
+        if (!AreEqual(result)) return true;
+
+		//Check if there is any override or entity class that has greater LastWriteTime than the generated file
+        var genWriteTime = File.GetLastWriteTime(GetFullPathByRelative(GeneratedFilePath));
+        return _entityProjectItems.Union(_overrideProjectItems)
+            .Any(pItem =>
+            {
+                var absPath = pItem.FileNames[0];
+                if (File.GetLastWriteTime(absPath) > genWriteTime) return true; //was modified
+                if (!pItem.Saved) return true; //was modified but not yet saved
+                return false;
+            });
+    }
+
+    private string GetFullPathByRelative(string relative)
+    {
+        return Path.Combine(Path.GetDirectoryName(GlobalContainer.VSHelper.CurrentProject.FullName), relative);
+    }
+
+    public bool AreEqual(EntityProjectItem item)
+    {
+        return (
+            item.GeneratedFilePath == GeneratedFilePath &&
+            item.EntityFullName == EntityFullName &&
+
+            item.EntityFilePaths.Count == EntityFilePaths.Count &&
+            item.EntityFilePaths.All(o => EntityFilePaths.Contains(o)) &&
+            EntityFilePaths.All(o => item.EntityFilePaths.Contains(o)) &&
+
+            item.OverrideFilePaths.Count == OverrideFilePaths.Count &&
+            item.OverrideFilePaths.All(o => OverrideFilePaths.Contains(o)) &&
+            OverrideFilePaths.All(o => item.OverrideFilePaths.Contains(o))
+        );
+    }
+
+    public string Serialize()
+    {
+        var xmlSerializer = new System.Xml.Serialization.XmlSerializer(typeof(EntityProjectItem));
+        var settings = new System.Xml.XmlWriterSettings
+        {
+            OmitXmlDeclaration = true,
+            Indent = false
+        };
+	    using(var strWriter = new StringWriter())
+		using(var writer = System.Xml.XmlWriter.Create(strWriter, settings))
+		{
+			xmlSerializer.Serialize(writer, this);
+			return strWriter.ToString();
+		}
+    }
+}
+
 public static class GlobalContainer
 {
 	public static CSharpCodeProvider CSharpCodeProvider = new CSharpCodeProvider();
@@ -1179,8 +1355,6 @@ public static class GlobalContainer
     public static VisualStudioHelper VSHelper;
 
     public static XmlSettings Settings;
-
-
 
     public static Dictionary<string, List<ModelRelation>> GlobalModelRelations;
 
@@ -1194,9 +1368,9 @@ public static class GlobalContainer
 
     public static IEnumerable<ProjectItem> ProjectItems;
 
-    public static Dictionary<string, string> GeneratedFiles;
+	public static HashSet<ProjectItem> DomainProjectItems;
 
-	public static Dictionary<string, string> DomainOverrideFiles;
+    public static Dictionary<string, EntityProjectItem> EntityProjectItems;
 
     public static Dictionary<string, Dictionary<string, CodeProperty>> Components; //Dict<typeFullName, PropName, PropTypefullName>
 
@@ -1217,9 +1391,9 @@ public static class GlobalContainer
         GlobalModelRelations.Clear();
         DomainClasses.Clear();
 		Overrides.Clear();
-		GeneratedFiles.Clear();
-		DomainOverrideFiles.Clear();
+		EntityProjectItems.Clear();
 		Components.Clear();
+		DomainProjectItems.Clear();
     }
 
     public static EntityType GetEntityType(CodeClass2 codeClass, bool throwIfNotFound)
@@ -1241,8 +1415,8 @@ public static class GlobalContainer
 		Overrides = new Dictionary<string, Dictionary<string, ModelRelation>>();
 		ProjectTypes = new Dictionary<string, List<CodeClass2>>();
 		Components = new Dictionary<string, Dictionary<string, CodeProperty>>();
-	    GeneratedFiles = new Dictionary<string, string>();
-		DomainOverrideFiles = new Dictionary<string, string>();
+	    EntityProjectItems = new Dictionary<string, EntityProjectItem>();
+	    DomainProjectItems = new HashSet<ProjectItem>();
 	}
 }
 
@@ -1256,6 +1430,8 @@ public class DomainModelWrapper
 	}
 	
 	#region Settable props
+
+	public string SettingsXml { get; set; }
 
 	public CodeClass2 CodeClass { get; set; }
 
@@ -1325,6 +1501,7 @@ public class DomainModelWrapper
 
 	public void Initialize()
 	{
+		if(!WasModified) return;
 		GlobalContainer.VSHelper.SetAsPartial(CodeClass);
 	    EntityType = GlobalContainer.GetEntityType(CodeClass, true);
 
@@ -1359,8 +1536,8 @@ public class DomainModelWrapper
 			}
 
 			MappedProperties.Add(prop.Name, prop);
-			if(WasModified)
-				EditMappedProperty(prop);
+			
+			EditMappedProperty(prop);
 				
 		}
 
@@ -1686,9 +1863,6 @@ public class DomainModelWrapper
 	    }
     }
 }
-
-
-
 
 #>
 <#+
@@ -2602,7 +2776,7 @@ public class VisualStudioHelper : AutomationHelper
 
 	public string GetVirtualPath(ProjectItem item)
 	{
-		string fileFullPath = item.get_FileNames(0);
+		string fileFullPath = item.FileNames[0];
 		var appRoot = Path.GetDirectoryName(item.ContainingProject.FullName) + "\\";
 
 		if (!fileFullPath.StartsWith(appRoot, StringComparison.OrdinalIgnoreCase))
@@ -2610,6 +2784,19 @@ public class VisualStudioHelper : AutomationHelper
 
 		// Make a virtual path from the physical path
 		return "~/" + fileFullPath.Substring(appRoot.Length).Replace('\\', '/');
+	}
+
+	//Example SubProjectFolder\Item.cs
+	public string GetRelativePathToCurrentProject(ProjectItem item)
+	{
+		string fileFullPath = item.FileNames[0];
+		var appRoot = Path.GetDirectoryName(item.ContainingProject.FullName) + "\\";
+
+		if (!fileFullPath.StartsWith(appRoot, StringComparison.OrdinalIgnoreCase))
+			throw new Exception(string.Format("File {0} is not under app root {1}. Please report issue.", fileFullPath, appRoot));
+
+		// Make a virtual path from the physical path
+		return fileFullPath.Substring(appRoot.Length);
 	}
 
 	public void ProcessTypes(ProjectItem file, Action<CodeClass2, ProjectItem> typeAction)

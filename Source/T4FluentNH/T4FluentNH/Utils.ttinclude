@@ -732,7 +732,7 @@ public class VisualStudioHelper : AutomationHelper
 
 	public string GetVirtualPath(ProjectItem item)
 	{
-		string fileFullPath = item.get_FileNames(0);
+		string fileFullPath = item.FileNames[0];
 		var appRoot = Path.GetDirectoryName(item.ContainingProject.FullName) + "\\";
 
 		if (!fileFullPath.StartsWith(appRoot, StringComparison.OrdinalIgnoreCase))
@@ -740,6 +740,19 @@ public class VisualStudioHelper : AutomationHelper
 
 		// Make a virtual path from the physical path
 		return "~/" + fileFullPath.Substring(appRoot.Length).Replace('\\', '/');
+	}
+
+	//Example SubProjectFolder\Item.cs
+	public string GetRelativePathToCurrentProject(ProjectItem item)
+	{
+		string fileFullPath = item.FileNames[0];
+		var appRoot = Path.GetDirectoryName(item.ContainingProject.FullName) + "\\";
+
+		if (!fileFullPath.StartsWith(appRoot, StringComparison.OrdinalIgnoreCase))
+			throw new Exception(string.Format("File {0} is not under app root {1}. Please report issue.", fileFullPath, appRoot));
+
+		// Make a virtual path from the physical path
+		return fileFullPath.Substring(appRoot.Length);
 	}
 
 	public void ProcessTypes(ProjectItem file, Action<CodeClass2, ProjectItem> typeAction)
