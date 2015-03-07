@@ -4,9 +4,10 @@
 <#@ include file="VsHelperInit.ttinclude"#>
 <#
 //System.Diagnostics.Debugger.Launch();
-//System.Diagnostics.Debugger.Break();	
+//System.Diagnostics.Debugger.Break();	+
 
-var debug = true;
+
+var debug = false;
 
 
 var globalWatch = Stopwatch.StartNew();
@@ -30,8 +31,9 @@ GlobalContainer.KnownNamespaces = new HashSet<string>
 if (GlobalContainer.Settings.GenerateMetadata.Relations)
     GlobalContainer.KnownNamespaces.Add("T4FluentNH.Metadata");
 
-//reset static props
-GlobalContainer.Reset();
+if(GlobalContainer.Settings.WasModified)
+	VSHelper.Warning("T4FluentNH settings was modified");
+
 
 if (debug)
 {
@@ -335,13 +337,14 @@ VSHelper.ProcessFiles(GlobalContainer.DomainProjectItems, (file, name) =>
 		    var entityPItem = GlobalContainer.EntityProjectItems[type.FullName];
 			var domainModelModified = entityPItem.IsDirty();
 
-		    if (!domainModelModified)
-		    {
-		        manager.KeepGeneratedFile(entityPItem.GeneratedFileAbsoultePath);
-		    }
-		    else
+		    if (domainModelModified)
 		    {
 		        VSHelper.Warning(string.Format("Type '{0}' was modified", type.FullName));
+		    }
+
+		    if (!domainModelModified && !GlobalContainer.Settings.WasModified)
+		    {
+		        manager.KeepGeneratedFile(entityPItem.GeneratedFileAbsoultePath);
 		    }
 
 		    var domainClass = new DomainModelWrapper
@@ -367,7 +370,7 @@ if (debug)
 }
 
 //Initialize All DomainClasses
-foreach (var domainClass in GlobalContainer.DomainClasses.Where(o => o.Value.WasModified))
+foreach (var domainClass in GlobalContainer.DomainClasses.Where(o => o.Value.WasModified || GlobalContainer.Settings.WasModified))
 {
 	
 	var typeWatch = debug ? Stopwatch.StartNew() : null; 
@@ -402,7 +405,7 @@ using <#=ns#>;
 }
 manager.EndBlock(); 
 
-foreach(var type in GlobalContainer.DomainClasses.Values.Where(o => o.WasModified))
+foreach(var type in GlobalContainer.DomainClasses.Values.Where(o => o.WasModified || GlobalContainer.Settings.WasModified))
 {
 	manager.StartNewFile(string.Format("{0}.generated.cs", type.FileName)); 
 #>
@@ -773,6 +776,8 @@ namespace <#=type.Namespace.FullName#>
 }
 manager.Process(true);
 
+//reset static props
+GlobalContainer.Reset();
 
 globalWatch.Stop();
 VSHelper.Warning(string.Format("T4FluentNH finished in {0} ms.", globalWatch.ElapsedMilliseconds)); 
@@ -1450,7 +1455,6 @@ public class DomainModelWrapper
 
 	public void Initialize()
 	{
-		if(!WasModified) return;
 		GlobalContainer.VSHelper.SetAsPartial(CodeClass);
 	    EntityType = GlobalContainer.GetEntityType(CodeClass, true);
 
@@ -1933,6 +1937,12 @@ public class DomainModelWrapper
                 NotNullAttribute = xElement.XPathSelectElement("/NotNullAttribute").Value,
                 LengthAttribute = xElement.XPathSelectElement("/LengthAttribute").Value,
             };
+
+			
+			var csFilePath = path.Replace("T4FluentNH.tt.settings.xml", "T4FluentNH.cs"); //Get File name
+            settings.WasModified = !File.Exists(csFilePath) ||
+                                   File.GetLastWriteTime(path) > File.GetLastWriteTime(csFilePath);
+
             if(string.IsNullOrEmpty(settings.BaseEntityType))
                 throw new Exception("BaseEntityType is not set");
             return settings;
@@ -1985,6 +1995,8 @@ public class DomainModelWrapper
         public SyntheticProperties SyntheticProperties { get; set; }
 
         public GenerateMetadata GenerateMetadata { get; set; }
+
+		public bool WasModified { get; set; }
 
     }
 
