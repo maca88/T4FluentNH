@@ -15,7 +15,7 @@ namespace T4FluentNH.Tests.External
         {
             get { return _users ?? (_users = new HashSet<CustomUser>()); }
             set { _users = value; }
-        } 
+        }
     }
 
     public class CustomOrganizationOverride : IAutoMappingOverride<CustomOrganization>

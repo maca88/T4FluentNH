@@ -32,6 +32,6 @@ namespace T4FluentNH.Tests.OneToOne
         public virtual void UnsetTwin()
         {
             this.UnsetOneToOne(o => o.Twin, o => o.Twin);
-        }	
+        }
     }
 }

@@ -423,6 +423,32 @@ public class VisualStudioHelper : AutomationHelper
 		return result;
 	}
 
+    public bool IsDerivedFrom(CodeClass2 cls, string fullName)
+    {
+		//In VS2015 the IsDerivedFrom method is not working as it should
+        if (VisualStudioVersion < 14) return cls.IsDerivedFrom[fullName];
+
+        if (cls == null) return false;
+        if (cls.FullName == fullName) return true;
+
+        for(var i=1; i <= cls.Bases.Count; i++)
+        {
+            var baseClass = (CodeClass2) cls.Bases.Item(i);
+            if (baseClass == null)
+            {
+                Warning(cls.Bases.Item(i).FullName + " is not CodeClass2");
+            }
+            if (IsDerivedFrom(baseClass, fullName)) return true;
+        }
+
+        for (var i = 1; i <= cls.ImplementedInterfaces.Count; i++)
+        {
+            if (cls.ImplementedInterfaces.Item(i).FullName == fullName) return true;
+        }
+
+        return false;
+    }
+
 
 	public bool IsController(CodeClass2 type)
 	{
@@ -547,6 +573,14 @@ public class VisualStudioHelper : AutomationHelper
 
 	public void SetPropertyBody(CodeProperty prop, string body)
 	{
+		//VS2015 makes an empty line before the first bracer
+	    if (VisualStudioVersion >= 14)
+	    {
+	        var regex = new Regex(Regex.Escape(Environment.NewLine));
+			body = regex.Replace(body, "", 1);
+	    }
+		
+	    //body = body.Replace(Environment.NewLine, "");
 		var codeStart = prop.StartPoint.CreateEditPoint();
 		var codeFinish = prop.EndPoint;
 		var functionText = codeStart.GetText(codeFinish);
@@ -1312,6 +1346,12 @@ public class AutomationHelper
 			return this.FindProjectItem(this.Host.TemplateFile).ContainingProject;
         }
     }
+
+    public decimal VisualStudioVersion
+    {
+        get { return decimal.Parse(CurrentProject.DTE.Version); }
+    }
+
 	#endregion
 
 	#region Project Items

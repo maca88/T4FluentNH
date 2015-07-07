@@ -59,7 +59,7 @@ VSHelper.ProcessFiles(GlobalContainer.ProjectItems, (file, name) => VSHelper.Pro
             GlobalContainer.EntityProjectItems[type.FullName].SetGeneratedFile(pItem);
             return;
         }
-        if(type.IsDerivedFrom[GlobalContainer.Settings.BaseEntityType] && !GlobalContainer.Settings.IgnoreTypes.Contains(type.FullName))
+        if( VSHelper.IsDerivedFrom(type, GlobalContainer.Settings.BaseEntityType) && !GlobalContainer.Settings.IgnoreTypes.Contains(type.FullName))
         {
 			if (!GlobalContainer.EntityProjectItems.ContainsKey(type.FullName))
                 GlobalContainer.EntityProjectItems.Add(type.FullName, new EntityProjectItem(type.FullName));
@@ -331,7 +331,7 @@ VSHelper.ProcessFiles(GlobalContainer.DomainProjectItems, (file, name) =>
 		{
 			if(VSHelper.GetAttribute(type.Attributes, "System.CodeDom.Compiler.GeneratedCodeAttribute") != null) return;
 			//VSHelper.GetAllCodeElementsOfType(type.)
-			if(!type.IsDerivedFrom[GlobalContainer.Settings.BaseEntityType] || GlobalContainer.Settings.IgnoreTypes.Contains(type.FullName)) return;
+			if(!VSHelper.IsDerivedFrom(type, GlobalContainer.Settings.BaseEntityType) || GlobalContainer.Settings.IgnoreTypes.Contains(type.FullName)) return;
 			//VSHelper.Warning(pItem.get_FileNames(0) + " gener created: " + (GlobalContainer.GeneratedFiles.ContainsKey(type.FullName) ?  File.GetCreationTime(GlobalContainer.GeneratedFiles[type.FullName]).ToString() : "WTF") + " gener modif: " + (GlobalContainer.GeneratedFiles.ContainsKey(type.FullName) ?  File.GetLastWriteTime(GlobalContainer.GeneratedFiles[type.FullName]).ToString() : "WTF") + " real: " + File.GetLastWriteTime(pItem.get_FileNames(0)));
 			
 		    var entityPItem = GlobalContainer.EntityProjectItems[type.FullName];
@@ -375,6 +375,12 @@ foreach (var domainClass in GlobalContainer.DomainClasses.Where(o => o.Value.Was
 	
 	var typeWatch = debug ? Stopwatch.StartNew() : null; 
     domainClass.Value.Initialize();
+
+    if (GlobalContainer.VSHelper.VisualStudioVersion == 14.0m) /*Workaround for VS2015 for saving items that are not opened*/
+    {
+        GlobalContainer.VSHelper.DTE.Documents.SaveAll();
+    }
+
     if (debug)
     {
         typeWatch.Stop();
@@ -1523,7 +1529,8 @@ public class DomainModelWrapper
 			    method.OverrideKind = vsCMOverrideKind.vsCMOverrideKindVirtual;
         }
 
-		ProjectItem.Save(); //Save the item
+		if(GlobalContainer.VSHelper.VisualStudioVersion < 14 || ProjectItem.IsOpen) //VS 2015 crash if the item is not open
+			ProjectItem.Save(); //Save the item
     }
 
     private void SetupRelation(ModelRelation relation)
@@ -1633,7 +1640,7 @@ public class DomainModelWrapper
 		        return new NoneModelRelation();
 		    }
             //Skip further processing if the related type is not an entity
-	        if (!GlobalContainer.ProjectTypes[typeFullName].Any(o => o.IsDerivedFrom[GlobalContainer.Settings.BaseEntityType]))
+	        if (!GlobalContainer.ProjectTypes[typeFullName].Any(o =>  GlobalContainer.VSHelper.IsDerivedFrom(o, GlobalContainer.Settings.BaseEntityType)))
 	        {
 	            return new NoneModelRelation();
 	        }
@@ -1976,7 +1983,7 @@ public class DomainModelWrapper
 
         public EntityType GetEntityType(VisualStudioHelper vsHelper, CodeClass2 codeClass, bool throwIfNotFound)
         {
-            var eType = EntityTypes.FirstOrDefault(o => codeClass.IsDerivedFrom[o.DerivedFromType] || vsHelper.ContainBaseType(codeClass, o.DerivedFromType));
+            var eType = EntityTypes.FirstOrDefault(o => vsHelper.IsDerivedFrom(codeClass, o.DerivedFromType) || vsHelper.ContainBaseType(codeClass, o.DerivedFromType));
             if(eType == null && throwIfNotFound)
                 throw new Exception("EntityType for type " + codeClass.FullName + " does not exists");
             return eType;

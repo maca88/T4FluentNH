@@ -17,7 +17,7 @@ namespace T4FluentNH.Tests.EntityTypes
             get { return _simpleEntity; }
             set { ResetField(ref _simpleEntity, value, ref _isSimpleEntityIdSet); }
         }
-        
+
     }
 
     public class ETCodeListEntityMapping : IAutoMappingOverride<ETCodeListEntity>

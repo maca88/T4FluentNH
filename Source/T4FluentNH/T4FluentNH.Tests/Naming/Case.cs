@@ -22,7 +22,7 @@ namespace T4FluentNH.Tests.Naming
         {
             get { return _uses ?? (_uses = new HashSet<Use>()); }
             set { _uses = value; }
-        } 
+        }
     }
 
     public partial class Switch : Domain.Entity
