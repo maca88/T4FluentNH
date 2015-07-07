@@ -51,20 +51,30 @@ namespace T4FluentNH.Tests.External
 
         [ReadOnly(true)]
 		public virtual int? UserId 
-		{ 
-			get { return _userId != default(int?) || User == null ? _userId : User.Id; } 
-			set { _userId = value; }
+		{
+            get 
+            {
+                if(_isUserIdSet) return _userId;
+                return User == null ? default(int?) : User.Id;
+            }
+            set 
+            {
+                _isUserIdSet = true;
+                _userId = value; 
+            }
 		}
 
 		private int? _userId;
 
+        private bool _isUserIdSet = false;
+
 		#endregion
 
 
-		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+		private void ResetField<T>(ref T field, T value, ref bool synthIsSetField)
         {
-            field = vatue;
-            synthField = default(TSynth);
+            field = value;
+            synthIsSetField = false;
         }
 	}
 }

@@ -15,7 +15,7 @@ namespace T4FluentNH.Tests.EntityTypes
         public virtual ETSimpleEntity SimpleEntity
         {
             get { return _simpleEntity; }
-            set { SetField(ref _simpleEntity, value, ref _simpleEntityId); }
+            set { ResetField(ref _simpleEntity, value, ref _isSimpleEntityIdSet); }
         }
         
     }

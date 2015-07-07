@@ -73,11 +73,21 @@ namespace T4FluentNH.Tests.OneToOne
         [ReadOnly(true)]
 		public virtual int? MarriedWithId 
 		{ 
-			get { return _marriedWithId != default(int?) || MarriedWith == null ? _marriedWithId : MarriedWith.Id; } 
-			set { _marriedWithId = value; }
+			get
+            {
+                if(_isMarriedWithIdSet) return _marriedWithId;
+                return MarriedWith == null ? default(int?) : MarriedWith.Id;
+            }
+			set 
+            {
+                _isMarriedWithIdSet = true;
+                _marriedWithId = value; 
+            }
 		}
 
 		private int? _marriedWithId;
+
+        private bool _isMarriedWithIdSet = false;
 
         public virtual void UnsetMarriedWith()
         {
@@ -93,11 +103,21 @@ namespace T4FluentNH.Tests.OneToOne
         [ReadOnly(true)]
 		public virtual int? TwinId 
 		{ 
-			get { return _twinId != default(int?) || Twin == null ? _twinId : Twin.Id; } 
-			set { _twinId = value; }
+			get
+            {
+                if(_isTwinIdSet) return _twinId;
+                return Twin == null ? default(int?) : Twin.Id;
+            }
+			set 
+            {
+                _isTwinIdSet = true;
+                _twinId = value; 
+            }
 		}
 
 		private int? _twinId;
+
+        private bool _isTwinIdSet = false;
 
 		public virtual void SetTwin(O2OPerson twin)
         {
@@ -107,10 +127,10 @@ namespace T4FluentNH.Tests.OneToOne
 		#endregion
 
 
-		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+		private void ResetField<T>(ref T field, T value, ref bool synthIsSetField)
         {
-            field = vatue;
-            synthField = default(TSynth);
+            field = value;
+            synthIsSetField = false;
         }
 	}
 }

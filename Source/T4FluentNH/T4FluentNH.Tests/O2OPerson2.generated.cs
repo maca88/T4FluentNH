@@ -55,11 +55,21 @@ namespace T4FluentNH.Tests.OneToOne
         [ReadOnly(true)]
 		public virtual int? IdentityCardId 
 		{ 
-			get { return _identityCardId != default(int?) || IdentityCard == null ? _identityCardId : IdentityCard.Id; } 
-			set { _identityCardId = value; }
+			get
+            {
+                if(_isIdentityCardIdSet) return _identityCardId;
+                return IdentityCard == null ? default(int?) : IdentityCard.Id;
+            }
+			set 
+            {
+                _isIdentityCardIdSet = true;
+                _identityCardId = value; 
+            }
 		}
 
 		private int? _identityCardId;
+
+        private bool _isIdentityCardIdSet = false;
 
 		public virtual void SetIdentityCard(O2OIdentityCard2 identityCard)
         {
@@ -74,10 +84,10 @@ namespace T4FluentNH.Tests.OneToOne
 		#endregion
 
 
-		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+		private void ResetField<T>(ref T field, T value, ref bool synthIsSetField)
         {
-            field = vatue;
-            synthField = default(TSynth);
+            field = value;
+            synthIsSetField = false;
         }
 	}
 }

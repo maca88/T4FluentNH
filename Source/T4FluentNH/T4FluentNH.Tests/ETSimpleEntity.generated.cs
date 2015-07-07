@@ -81,12 +81,22 @@ namespace T4FluentNH.Tests.EntityTypes
 
         [ReadOnly(true)]
 		public virtual string CodeListEntityCode 
-		{ 
-			get { return _codeListEntityCode != default(string) || CodeListEntity == null ? _codeListEntityCode : CodeListEntity.Code; } 
-			set { _codeListEntityCode = value; }
+		{
+            get 
+            {
+                if(_isCodeListEntityCodeSet) return _codeListEntityCode;
+                return CodeListEntity == null ? default(string) : CodeListEntity.Code;
+            }
+            set 
+            {
+                _isCodeListEntityCodeSet = true;
+                _codeListEntityCode = value; 
+            }
 		}
 
 		private string _codeListEntityCode;
+
+        private bool _isCodeListEntityCodeSet = false;
 
 		#endregion
 
@@ -96,12 +106,22 @@ namespace T4FluentNH.Tests.EntityTypes
 
         [ReadOnly(true)]
 		public virtual string InheritCodeListEntityCode 
-		{ 
-			get { return _inheritCodeListEntityCode != default(string) || InheritCodeListEntity == null ? _inheritCodeListEntityCode : InheritCodeListEntity.Code; } 
-			set { _inheritCodeListEntityCode = value; }
+		{
+            get 
+            {
+                if(_isInheritCodeListEntityCodeSet) return _inheritCodeListEntityCode;
+                return InheritCodeListEntity == null ? default(string) : InheritCodeListEntity.Code;
+            }
+            set 
+            {
+                _isInheritCodeListEntityCodeSet = true;
+                _inheritCodeListEntityCode = value; 
+            }
 		}
 
 		private string _inheritCodeListEntityCode;
+
+        private bool _isInheritCodeListEntityCodeSet = false;
 
 		#endregion
 
@@ -111,20 +131,30 @@ namespace T4FluentNH.Tests.EntityTypes
 
         [ReadOnly(true)]
 		public virtual string LengthCodeListEntityCode 
-		{ 
-			get { return _lengthCodeListEntityCode != default(string) || LengthCodeListEntity == null ? _lengthCodeListEntityCode : LengthCodeListEntity.Code; } 
-			set { _lengthCodeListEntityCode = value; }
+		{
+            get 
+            {
+                if(_isLengthCodeListEntityCodeSet) return _lengthCodeListEntityCode;
+                return LengthCodeListEntity == null ? default(string) : LengthCodeListEntity.Code;
+            }
+            set 
+            {
+                _isLengthCodeListEntityCodeSet = true;
+                _lengthCodeListEntityCode = value; 
+            }
 		}
 
 		private string _lengthCodeListEntityCode;
 
+        private bool _isLengthCodeListEntityCodeSet = false;
+
 		#endregion
 
 
-		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+		private void ResetField<T>(ref T field, T value, ref bool synthIsSetField)
         {
-            field = vatue;
-            synthField = default(TSynth);
+            field = value;
+            synthIsSetField = false;
         }
 	}
 }

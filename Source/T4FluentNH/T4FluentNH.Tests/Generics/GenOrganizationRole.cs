@@ -13,7 +13,7 @@ namespace T4FluentNH.Tests.Generics
         public virtual GenRole Role
         {
             get { return _role; }
-            set { SetField(ref _role, value, ref _roleId); }
+            set { ResetField(ref _role, value, ref _isRoleIdSet); }
         }
     }
 }

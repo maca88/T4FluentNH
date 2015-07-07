@@ -13,19 +13,19 @@ namespace T4FluentNH.Tests.EntityTypes
         public virtual ETCodeListEntity CodeListEntity
         {
             get { return _codeListEntity; }
-            set { SetField(ref _codeListEntity, value, ref _codeListEntityCode); }
+            set { ResetField(ref _codeListEntity, value, ref _isCodeListEntityCodeSet); }
         }
 
         public virtual ETInheritedCodeListEntity InheritCodeListEntity
         {
             get { return _inheritCodeListEntity; }
-            set { SetField(ref _inheritCodeListEntity, value, ref _inheritCodeListEntityCode); }
+            set { ResetField(ref _inheritCodeListEntity, value, ref _isInheritCodeListEntityCodeSet); }
         }
 
         public virtual ETLengthCodeList LengthCodeListEntity
         {
             get { return _lengthCodeListEntity; }
-            set { SetField(ref _lengthCodeListEntity, value, ref _lengthCodeListEntityCode); }
+            set { ResetField(ref _lengthCodeListEntity, value, ref _isLengthCodeListEntityCodeSet); }
         }
     }
 }

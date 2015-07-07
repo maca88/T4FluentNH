@@ -15,7 +15,7 @@ namespace T4FluentNH.Tests.Naming
         public virtual Switch Switch
         {
             get { return _switch; }
-            set { SetField(ref _switch, value, ref _switchId); }
+            set { ResetField(ref _switch, value, ref _isSwitchIdSet); }
         }
 
         public virtual ISet<Use> Uses
@@ -33,7 +33,7 @@ namespace T4FluentNH.Tests.Naming
         public virtual Case Case
         {
             get { return _case; }
-            set { SetField(ref _case, value, ref _caseId); }
+            set { ResetField(ref _case, value, ref _isCaseIdSet); }
         }
     }
 
@@ -44,7 +44,7 @@ namespace T4FluentNH.Tests.Naming
         public virtual Case Case
         {
             get { return _case; }
-            set { SetField(ref _case, value, ref _caseId); }
+            set { ResetField(ref _case, value, ref _isCaseIdSet); }
         }
 
     }

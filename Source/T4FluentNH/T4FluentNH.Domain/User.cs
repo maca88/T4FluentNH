@@ -11,6 +11,6 @@ namespace T4FluentNH.Domain
     {
         public virtual TOrganization Organization { get; set; }
 
-        public int OrganizationId { get; set; }
+        public virtual int OrganizationId { get; set; }
     }
 }

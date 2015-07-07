@@ -51,20 +51,30 @@ namespace T4FluentNH.Tests.Generics
 
         [ReadOnly(true)]
 		public virtual int? RoleId 
-		{ 
-			get { return _roleId != default(int?) || Role == null ? _roleId : Role.Id; } 
-			set { _roleId = value; }
+		{
+            get 
+            {
+                if(_isRoleIdSet) return _roleId;
+                return Role == null ? default(int?) : Role.Id;
+            }
+            set 
+            {
+                _isRoleIdSet = true;
+                _roleId = value; 
+            }
 		}
 
 		private int? _roleId;
 
+        private bool _isRoleIdSet = false;
+
 		#endregion
 
 
-		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+		private void ResetField<T>(ref T field, T value, ref bool synthIsSetField)
         {
-            field = vatue;
-            synthField = default(TSynth);
+            field = value;
+            synthIsSetField = false;
         }
 	}
 }

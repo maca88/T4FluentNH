@@ -55,12 +55,22 @@ namespace T4FluentNH.Tests.Naming
 
         [ReadOnly(true)]
 		public virtual int? CaseId 
-		{ 
-			get { return _caseId != default(int?) || Case == null ? _caseId : Case.Id; } 
-			set { _caseId = value; }
+		{
+            get 
+            {
+                if(_isCaseIdSet) return _caseId;
+                return Case == null ? default(int?) : Case.Id;
+            }
+            set 
+            {
+                _isCaseIdSet = true;
+                _caseId = value; 
+            }
 		}
 
 		private int? _caseId;
+
+        private bool _isCaseIdSet = false;
 
         public virtual void SetCase(Case @case)
         {
@@ -75,10 +85,10 @@ namespace T4FluentNH.Tests.Naming
 		#endregion
 
 
-		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+		private void ResetField<T>(ref T field, T value, ref bool synthIsSetField)
         {
-            field = vatue;
-            synthField = default(TSynth);
+            field = value;
+            synthIsSetField = false;
         }
 	}
 }

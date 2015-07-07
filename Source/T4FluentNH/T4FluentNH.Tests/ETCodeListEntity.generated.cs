@@ -51,20 +51,30 @@ namespace T4FluentNH.Tests.EntityTypes
 
         [ReadOnly(true)]
 		public virtual int? SimpleEntityId 
-		{ 
-			get { return _simpleEntityId != default(int?) || SimpleEntity == null ? _simpleEntityId : SimpleEntity.Id; } 
-			set { _simpleEntityId = value; }
+		{
+            get 
+            {
+                if(_isSimpleEntityIdSet) return _simpleEntityId;
+                return SimpleEntity == null ? default(int?) : SimpleEntity.Id;
+            }
+            set 
+            {
+                _isSimpleEntityIdSet = true;
+                _simpleEntityId = value; 
+            }
 		}
 
 		private int? _simpleEntityId;
 
+        private bool _isSimpleEntityIdSet = false;
+
 		#endregion
 
 
-		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+		private void ResetField<T>(ref T field, T value, ref bool synthIsSetField)
         {
-            field = vatue;
-            synthField = default(TSynth);
+            field = value;
+            synthIsSetField = false;
         }
 	}
 }

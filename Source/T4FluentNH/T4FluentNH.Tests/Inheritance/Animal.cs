@@ -13,7 +13,7 @@ namespace T4FluentNH.Tests.Inheritance
         public virtual Owner Owner
         {
             get { return _owner; }
-            set { SetField(ref _owner, value, ref _ownerId); }
+            set { ResetField(ref _owner, value, ref _isOwnerIdSet); }
         }
     }
 }

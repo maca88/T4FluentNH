@@ -60,7 +60,7 @@
 //System.Diagnostics.Debugger.Break();	+
 
 
-var debug = true;
+var debug = false;
 
 
 var globalWatch = Stopwatch.StartNew();
@@ -701,12 +701,22 @@ namespace <#=type.Namespace.FullName#>
 					{
 #>
 		public virtual <#=manyToOneRelation.SyntheticPropertyTypeName#> <#=manyToOneRelation.SyntheticPropertyName#> 
-		{ 
-			get { return <#=manyToOneRelation.SyntheticFieldName#> != default(<#=manyToOneRelation.SyntheticPropertyTypeName#>) || <#=manyToOneRelation.PropertyName#> == null ? <#=manyToOneRelation.SyntheticFieldName#> : <#=manyToOneRelation.PropertyName#>.<#=manyToOneRelation.RelatedModelIdPropertyName#>; } 
-			<#=GlobalContainer.Settings.Strict ? "protected " : ""#>set { <#=manyToOneRelation.SyntheticFieldName#> = value; }
+		{
+            get 
+            {
+                if(<#=manyToOneRelation.SyntheticIsSetFieldName#>) return <#=manyToOneRelation.SyntheticFieldName#>;
+                return <#=manyToOneRelation.PropertyName#> == null ? default(<#=manyToOneRelation.SyntheticPropertyTypeName#>) : <#=manyToOneRelation.PropertyName#>.<#=manyToOneRelation.RelatedModelIdPropertyName#>;
+            }
+            <#=GlobalContainer.Settings.Strict ? "protected " : ""#>set 
+            {
+                <#=manyToOneRelation.SyntheticIsSetFieldName#> = true;
+                <#=manyToOneRelation.SyntheticFieldName#> = value; 
+            }
 		}
 
 		private <#=manyToOneRelation.SyntheticPropertyTypeName#> <#=manyToOneRelation.SyntheticFieldName#>;
+
+        private bool <#=manyToOneRelation.SyntheticIsSetFieldName#> = false;
 <#
 					}    
                 }
@@ -771,11 +781,21 @@ namespace <#=type.Namespace.FullName#>
 #>
 		public virtual <#=oneToOneRelation.SyntheticPropertyTypeName#> <#=oneToOneRelation.SyntheticPropertyName#> 
 		{ 
-			get { return <#=oneToOneRelation.SyntheticFieldName#> != default(<#=oneToOneRelation.SyntheticPropertyTypeName#>) || <#=oneToOneRelation.PropertyName#> == null ? <#=oneToOneRelation.SyntheticFieldName#> : <#=oneToOneRelation.PropertyName#>.<#=oneToOneRelation.RelatedModelIdPropertyName#>; } 
-			<#=GlobalContainer.Settings.Strict ? "protected " : ""#>set { <#=oneToOneRelation.SyntheticFieldName#> = value; }
+			get
+            {
+                if(<#=oneToOneRelation.SyntheticIsSetFieldName#>) return <#=oneToOneRelation.SyntheticFieldName#>;
+                return <#=oneToOneRelation.PropertyName#> == null ? default(<#=oneToOneRelation.SyntheticPropertyTypeName#>) : <#=oneToOneRelation.PropertyName#>.<#=oneToOneRelation.RelatedModelIdPropertyName#>;
+            }
+			<#=GlobalContainer.Settings.Strict ? "protected " : ""#>set 
+            {
+                <#=oneToOneRelation.SyntheticIsSetFieldName#> = true;
+                <#=oneToOneRelation.SyntheticFieldName#> = value; 
+            }
 		}
 
 		private <#=oneToOneRelation.SyntheticPropertyTypeName#> <#=oneToOneRelation.SyntheticFieldName#>;
+
+        private bool <#=oneToOneRelation.SyntheticIsSetFieldName#> = false;
 <#
 					}    
                 }
@@ -814,10 +834,10 @@ namespace <#=type.Namespace.FullName#>
     {
 #>
 
-		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+		private void ResetField<T>(ref T field, T value, ref bool synthIsSetField)
         {
-            field = vatue;
-            synthField = default(TSynth);
+            field = value;
+            synthIsSetField = false;
         }
 <#  
     }
@@ -1177,6 +1197,8 @@ public abstract class OneModelRelation : ModelRelation
 	public string SyntheticPropertyTypeName { get; set; }
 
 	public string SyntheticFieldName { get; set; }
+
+    public string SyntheticIsSetFieldName { get; set; }
 
 	public string SyntheticPropertyMaxLength { get; set; }
 
@@ -1631,8 +1653,9 @@ public class DomainModelWrapper
 						? relation.KeyColumn
 						: relation.RelatedModelEntityType.KeyColumnPrefix + relation.PropertyName + relation.RelatedModelEntityType.KeyColumnPostfix;
 					oneRelation.SyntheticFieldName = GlobalContainer.VSHelper.GetFieldName(oneRelation.SyntheticPropertyName);
+                    oneRelation.SyntheticIsSetFieldName = "_is" + oneRelation.SyntheticPropertyName + "Set";
 					oneRelation.SyntheticPropertyMaxLength = relation.RelatedModelEntityType.GetIdentifierLength(relation.RelatedModelTypeFullName);
-				    oneRelation.GenerateSyntheticProperty =
+				    oneRelation.GenerateSyntheticProperty = 
 				        GlobalContainer.VSHelper.GetInheritedProperties((CodeType) CodeClass)
 				            .All(o => o.Name != oneRelation.SyntheticPropertyName); //Check if is already defined
 				}
@@ -1822,9 +1845,10 @@ public class DomainModelWrapper
 			{1}
 		}}",
 			string.Format("get {{ return {0}; }}", relation.FieldName),
-			string.Format("{2}set {{ SetField(ref {0}, value, ref {1}); }}", 
+			string.Format("{2}set {{ ResetField(ref {0}, value, ref {1}); }}", 
 				relation.FieldName,
-                relation.SyntheticFieldName,
+                //relation.SyntheticFieldName,
+                relation.SyntheticIsSetFieldName,
                 (GlobalContainer.Settings.Strict ? "protected internal " : "")));
 			GlobalContainer.VSHelper.SetPropertyBody(prop, body);	
         }

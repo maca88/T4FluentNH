@@ -12,7 +12,7 @@ namespace T4FluentNH.Tests.External
         public virtual IUser User
         {
             get { return _user; }
-            set { SetField(ref _user, value, ref _userId); }
+            set { ResetField(ref _user, value, ref _isUserIdSet); }
         }
 
     }

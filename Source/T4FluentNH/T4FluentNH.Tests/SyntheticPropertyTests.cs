@@ -43,6 +43,22 @@ namespace T4FluentNH.Tests
                 patricia.UnsetMarriedWith();
                 Assert.AreEqual(null, patricia.MarriedWithId);
                 Assert.AreEqual(null, rocky.MarriedWithId);
+
+
+                patricia.SetMarriedWith(rocky);
+                Assert.AreEqual(rocky.Id, patricia.MarriedWithId);
+                Assert.AreEqual(patricia.Id, rocky.MarriedWithId);
+
+                patricia.MarriedWithId = null;
+                rocky.MarriedWithId = null;
+                Assert.AreEqual(null, patricia.MarriedWithId);
+                Assert.AreEqual(null, rocky.MarriedWithId);
+
+                patricia.UnsetMarriedWith();
+                patricia.SetMarriedWith(rocky);
+                Assert.AreEqual(rocky.Id, patricia.MarriedWithId);
+                Assert.AreEqual(patricia.Id, rocky.MarriedWithId);
+
             }
         }
 

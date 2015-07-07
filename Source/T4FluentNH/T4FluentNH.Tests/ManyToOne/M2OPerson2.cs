@@ -14,7 +14,7 @@ namespace T4FluentNH.Tests.ManyToOne
         public virtual M2OCar2 Car
         {
             get { return _car; }
-            set { SetField(ref _car, value, ref _carId); }
+            set { ResetField(ref _car, value, ref _isCarIdSet); }
         }
 
     }

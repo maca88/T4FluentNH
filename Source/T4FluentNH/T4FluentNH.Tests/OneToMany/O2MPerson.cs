@@ -30,7 +30,7 @@ namespace T4FluentNH.Tests.OneToMany
         public virtual O2MPerson Owner
         {
             get { return _owner; }
-            set { SetField(ref _owner, value, ref _ownerId); }
+            set { ResetField(ref _owner, value, ref _isOwnerIdSet); }
         }
 
     }

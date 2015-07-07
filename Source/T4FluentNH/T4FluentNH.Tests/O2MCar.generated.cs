@@ -55,12 +55,22 @@ namespace T4FluentNH.Tests.OneToMany
 
         [ReadOnly(true)]
 		public virtual int OwnerId 
-		{ 
-			get { return _ownerId != default(int) || Owner == null ? _ownerId : Owner.Id; } 
-			set { _ownerId = value; }
+		{
+            get 
+            {
+                if(_isOwnerIdSet) return _ownerId;
+                return Owner == null ? default(int) : Owner.Id;
+            }
+            set 
+            {
+                _isOwnerIdSet = true;
+                _ownerId = value; 
+            }
 		}
 
 		private int _ownerId;
+
+        private bool _isOwnerIdSet = false;
 
         public virtual void SetOwner(O2MPerson owner)
         {
@@ -75,10 +85,10 @@ namespace T4FluentNH.Tests.OneToMany
 		#endregion
 
 
-		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+		private void ResetField<T>(ref T field, T value, ref bool synthIsSetField)
         {
-            field = vatue;
-            synthField = default(TSynth);
+            field = value;
+            synthIsSetField = false;
         }
 	}
 }

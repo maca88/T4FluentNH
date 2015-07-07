@@ -51,20 +51,30 @@ namespace T4FluentNH.Tests.ManyToOne
 
         [ReadOnly(true)]
 		public virtual int? CarId 
-		{ 
-			get { return _carId != default(int?) || Car == null ? _carId : Car.Id; } 
-			set { _carId = value; }
+		{
+            get 
+            {
+                if(_isCarIdSet) return _carId;
+                return Car == null ? default(int?) : Car.Id;
+            }
+            set 
+            {
+                _isCarIdSet = true;
+                _carId = value; 
+            }
 		}
 
 		private int? _carId;
 
+        private bool _isCarIdSet = false;
+
 		#endregion
 
 
-		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+		private void ResetField<T>(ref T field, T value, ref bool synthIsSetField)
         {
-            field = vatue;
-            synthField = default(TSynth);
+            field = value;
+            synthIsSetField = false;
         }
 	}
 }

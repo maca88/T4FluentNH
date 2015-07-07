@@ -70,11 +70,21 @@ namespace T4FluentNH.Tests.Naming
         [ReadOnly(true)]
 		public virtual int? SwitchId 
 		{ 
-			get { return _switchId != default(int?) || Switch == null ? _switchId : Switch.Id; } 
-			set { _switchId = value; }
+			get
+            {
+                if(_isSwitchIdSet) return _switchId;
+                return Switch == null ? default(int?) : Switch.Id;
+            }
+			set 
+            {
+                _isSwitchIdSet = true;
+                _switchId = value; 
+            }
 		}
 
 		private int? _switchId;
+
+        private bool _isSwitchIdSet = false;
 
 		public virtual void SetSwitch(Switch @switch)
         {
@@ -105,10 +115,10 @@ namespace T4FluentNH.Tests.Naming
 		#endregion
 
 
-		private void SetField<T, TSynth>(ref T field, T vatue, ref TSynth synthField)
+		private void ResetField<T>(ref T field, T value, ref bool synthIsSetField)
         {
-            field = vatue;
-            synthField = default(TSynth);
+            field = value;
+            synthIsSetField = false;
         }
 	}
 }

@@ -11,7 +11,7 @@ namespace T4FluentNH.Tests.OneToOne
         public virtual O2OIdentityCard2 IdentityCard
         {
             get { return _identityCard; }
-            set { SetField(ref _identityCard, value, ref _identityCardId); }
+            set { ResetField(ref _identityCard, value, ref _isIdentityCardIdSet); }
         }
     }
 
@@ -23,7 +23,7 @@ namespace T4FluentNH.Tests.OneToOne
         public virtual O2OPerson2 Owner
         {
             get { return _owner; }
-            set { SetField(ref _owner, value, ref _ownerId); }
+            set { ResetField(ref _owner, value, ref _isOwnerIdSet); }
         }
     } 
 }

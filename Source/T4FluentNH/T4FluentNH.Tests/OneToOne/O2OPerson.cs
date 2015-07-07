@@ -12,14 +12,14 @@ namespace T4FluentNH.Tests.OneToOne
         public virtual O2OPerson MarriedWith
         {
             get { return _marriedWith; }
-            set { SetField(ref _marriedWith, value, ref _marriedWithId); }
+            set { ResetField(ref _marriedWith, value, ref _isMarriedWithIdSet); }
         }
 
         [AsOneToOne] //cannot be unique
         public virtual O2OPerson Twin
         {
             get { return _twin; }
-            set { SetField(ref _twin, value, ref _twinId); }
+            set { ResetField(ref _twin, value, ref _isTwinIdSet); }
         }
 
         //Custom Set method
