@@ -13,4 +13,9 @@ namespace T4FluentNH.Domain
 
         public virtual int OrganizationId { get; set; }
     }
+
+    public class User : User<Organization>
+    {
+        
+    }
 }

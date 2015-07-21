@@ -26,8 +26,48 @@ namespace T4FluentNH.Tests.Generics
 		public new static readonly Dictionary<string, RelationMetadata> RelationsMetadata =
             new Dictionary<string, RelationMetadata>
             {
+                {"Organization", new ManyToOneRelationMetadata
+                {
+					RelatedModelType = typeof(GenOrganization),
+					RelatedModelIdProperty = typeof(GenOrganization).GetProperty("Id"),
+					AssociationType = AssociationType.Unidirectional,
+					Field = typeof(GenUser).GetField("_organization", BindingFlags.Instance | BindingFlags.NonPublic),
+					ParameterName = "organization",
+					Property = typeof(GenUser).GetProperty("Organization"),
+					SyntheticProperty = typeof(GenUser).GetProperty("OrganizationId"),
+					SyntheticField = typeof(GenUser).GetField("_organizationId", BindingFlags.Instance | BindingFlags.NonPublic),
+					SyntheticPropertyMaxLength = null,
+					IsSyntheticPropertyTypeRequired = false,
+					
+                }},
+		
             };
 		#pragma warning restore
+		#endregion
+
+		#region Organization
+
+        private GenOrganization _organization;
+
+        [ReadOnly(true)]
+		public virtual int? OrganizationId 
+		{
+            get 
+            {
+                if(_isOrganizationIdSet) return _organizationId;
+                return Organization == null ? default(int?) : Organization.Id;
+            }
+            set 
+            {
+                _isOrganizationIdSet = true;
+                _organizationId = value; 
+            }
+		}
+
+		private int? _organizationId;
+
+        private bool _isOrganizationIdSet = false;
+
 		#endregion
 
 

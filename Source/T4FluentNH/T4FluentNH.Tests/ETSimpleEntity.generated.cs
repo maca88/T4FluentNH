@@ -71,6 +71,36 @@ namespace T4FluentNH.Tests.EntityTypes
 					
                 }},
 		
+                {"AttrLengthByIndexCodeList", new ManyToOneRelationMetadata
+                {
+					RelatedModelType = typeof(ETAttrLengthByIndexCodeList),
+					RelatedModelIdProperty = typeof(ETAttrLengthByIndexCodeList).GetProperty("Code"),
+					AssociationType = AssociationType.Unidirectional,
+					Field = typeof(ETSimpleEntity).GetField("_attrLengthByIndexCodeList", BindingFlags.Instance | BindingFlags.NonPublic),
+					ParameterName = "attrLengthByIndexCodeList",
+					Property = typeof(ETSimpleEntity).GetProperty("AttrLengthByIndexCodeList"),
+					SyntheticProperty = typeof(ETSimpleEntity).GetProperty("AttrLengthByIndexCodeListCode"),
+					SyntheticField = typeof(ETSimpleEntity).GetField("_attrLengthByIndexCodeListCode", BindingFlags.Instance | BindingFlags.NonPublic),
+					SyntheticPropertyMaxLength = 14,
+					IsSyntheticPropertyTypeRequired = false,
+					
+                }},
+		
+                {"AttrLengthByPropertyCodeList", new ManyToOneRelationMetadata
+                {
+					RelatedModelType = typeof(ETAttrLengthByPropertyCodeList),
+					RelatedModelIdProperty = typeof(ETAttrLengthByPropertyCodeList).GetProperty("Code"),
+					AssociationType = AssociationType.Unidirectional,
+					Field = typeof(ETSimpleEntity).GetField("_attrLengthByPropertyCodeList", BindingFlags.Instance | BindingFlags.NonPublic),
+					ParameterName = "attrLengthByPropertyCodeList",
+					Property = typeof(ETSimpleEntity).GetProperty("AttrLengthByPropertyCodeList"),
+					SyntheticProperty = typeof(ETSimpleEntity).GetProperty("AttrLengthByPropertyCodeListCode"),
+					SyntheticField = typeof(ETSimpleEntity).GetField("_attrLengthByPropertyCodeListCode", BindingFlags.Instance | BindingFlags.NonPublic),
+					SyntheticPropertyMaxLength = 11,
+					IsSyntheticPropertyTypeRequired = false,
+					
+                }},
+		
             };
 		#pragma warning restore
 		#endregion
@@ -80,6 +110,7 @@ namespace T4FluentNH.Tests.EntityTypes
         private ETCodeListEntity _codeListEntity;
 
         [ReadOnly(true)]
+        [T4FluentNH.Tests.LengthAttribute(20)]
 		public virtual string CodeListEntityCode 
 		{
             get 
@@ -105,6 +136,7 @@ namespace T4FluentNH.Tests.EntityTypes
         private ETInheritedCodeListEntity _inheritCodeListEntity;
 
         [ReadOnly(true)]
+        [T4FluentNH.Tests.LengthAttribute(20)]
 		public virtual string InheritCodeListEntityCode 
 		{
             get 
@@ -130,6 +162,7 @@ namespace T4FluentNH.Tests.EntityTypes
         private ETLengthCodeList _lengthCodeListEntity;
 
         [ReadOnly(true)]
+        [T4FluentNH.Tests.LengthAttribute(30)]
 		public virtual string LengthCodeListEntityCode 
 		{
             get 
@@ -147,6 +180,58 @@ namespace T4FluentNH.Tests.EntityTypes
 		private string _lengthCodeListEntityCode;
 
         private bool _isLengthCodeListEntityCodeSet = false;
+
+		#endregion
+
+		#region AttrLengthByIndexCodeList
+
+        private ETAttrLengthByIndexCodeList _attrLengthByIndexCodeList;
+
+        [ReadOnly(true)]
+        [T4FluentNH.Tests.LengthAttribute(14)]
+		public virtual string AttrLengthByIndexCodeListCode 
+		{
+            get 
+            {
+                if(_isAttrLengthByIndexCodeListCodeSet) return _attrLengthByIndexCodeListCode;
+                return AttrLengthByIndexCodeList == null ? default(string) : AttrLengthByIndexCodeList.Code;
+            }
+            set 
+            {
+                _isAttrLengthByIndexCodeListCodeSet = true;
+                _attrLengthByIndexCodeListCode = value; 
+            }
+		}
+
+		private string _attrLengthByIndexCodeListCode;
+
+        private bool _isAttrLengthByIndexCodeListCodeSet = false;
+
+		#endregion
+
+		#region AttrLengthByPropertyCodeList
+
+        private ETAttrLengthByPropertyCodeList _attrLengthByPropertyCodeList;
+
+        [ReadOnly(true)]
+        [T4FluentNH.Tests.LengthAttribute(11)]
+		public virtual string AttrLengthByPropertyCodeListCode 
+		{
+            get 
+            {
+                if(_isAttrLengthByPropertyCodeListCodeSet) return _attrLengthByPropertyCodeListCode;
+                return AttrLengthByPropertyCodeList == null ? default(string) : AttrLengthByPropertyCodeList.Code;
+            }
+            set 
+            {
+                _isAttrLengthByPropertyCodeListCodeSet = true;
+                _attrLengthByPropertyCodeListCode = value; 
+            }
+		}
+
+		private string _attrLengthByPropertyCodeListCode;
+
+        private bool _isAttrLengthByPropertyCodeListCodeSet = false;
 
 		#endregion
 

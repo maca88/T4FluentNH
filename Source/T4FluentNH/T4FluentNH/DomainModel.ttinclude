@@ -190,7 +190,7 @@ VSHelper.ProcessFiles(GlobalContainer.ProjectItems, (file, name) => VSHelper.Pro
             var assocType = relatedProp == null ? AssociationType.Unidirectional : AssociationType.Bidirectional;
             
             //Add oneToMany
-			GlobalContainer.Overrides[overrideType].Add(propName,
+			GlobalContainer.Overrides[overrideType][propName] =
 				new OneToManyModelRelation
 						{
 							RelatedModelTypeFullName =relatedPropType,
@@ -200,7 +200,7 @@ VSHelper.ProcessFiles(GlobalContainer.ProjectItems, (file, name) => VSHelper.Pro
                             KeyColumn = keyColumn,
 							PathInRelatedModel = relatedProp == null ? null : relatedPropName, //one
                             AssociationType = assocType
-						});
+						};
 
             //Add manyToOne
             var manyToOneRelation = new ManyToOneModelRelation
@@ -220,7 +220,7 @@ VSHelper.ProcessFiles(GlobalContainer.ProjectItems, (file, name) => VSHelper.Pro
             {
                 if(!GlobalContainer.Overrides.ContainsKey(relatedPropType))
 				    GlobalContainer.Overrides.Add(relatedPropType, new Dictionary<string, ModelRelation>());
-                GlobalContainer.Overrides[relatedPropType].Add(relatedPropName, manyToOneRelation);
+                GlobalContainer.Overrides[relatedPropType][relatedPropName] = manyToOneRelation;
             }
 
         }
@@ -250,14 +250,14 @@ VSHelper.ProcessFiles(GlobalContainer.ProjectItems, (file, name) => VSHelper.Pro
             var relatedProp = VSHelper.GetProperties(GlobalContainer.ProjectTypes[relatedPropType]).First(o => o.Name == relatedPropName);
 
 			//Add oneToOne
-			GlobalContainer.Overrides[overrideType].Add(propName,
+			GlobalContainer.Overrides[overrideType][propName] =
 				new OneToOneModelRelation
 						{
 							RelatedModelTypeFullName = relatedPropType,
 							Property = prop, 
 							PathInRelatedModel = relatedPropName ,
                             AssociationType = AssociationType.Bidirectional
-						});
+						};
 			//Add one to one
 			if(!GlobalContainer.Overrides.ContainsKey(relatedPropType))
 				GlobalContainer.Overrides.Add(relatedPropType, new Dictionary<string, ModelRelation>());
@@ -298,7 +298,7 @@ VSHelper.ProcessFiles(GlobalContainer.ProjectItems, (file, name) => VSHelper.Pro
 						!GlobalContainer.Overrides[overrideType].ContainsKey(propName))
                     {
 						//add manyToMany
-						GlobalContainer.Overrides[overrideType].Add(propName,
+						GlobalContainer.Overrides[overrideType][propName] =
 							new ManyToManyModelRelation
 									{
 										RelatedModelTypeFullName = relatedPropType,
@@ -306,7 +306,7 @@ VSHelper.ProcessFiles(GlobalContainer.ProjectItems, (file, name) => VSHelper.Pro
 										Property = prop, 
 										PathInRelatedModel = relTypeProp.Name,
                                         AssociationType = AssociationType.Bidirectional
-									});
+									};
                     }	
 				}
             }
@@ -375,11 +375,6 @@ foreach (var domainClass in GlobalContainer.DomainClasses.Where(o => o.Value.Was
 	
 	var typeWatch = debug ? Stopwatch.StartNew() : null; 
     domainClass.Value.Initialize();
-
-    if (GlobalContainer.VSHelper.VisualStudioVersion == 14.0m) /*Workaround for VS2015 for saving items that are not opened*/
-    {
-        GlobalContainer.VSHelper.DTE.Documents.SaveAll();
-    }
 
     if (debug)
     {
@@ -1522,6 +1517,21 @@ public class DomainModelWrapper
 				
 		}
 
+		if (GlobalContainer.Settings.SyntheticProperties.GenerateForDeriveredTypes)
+	    {
+			//Generate synthetic props for inherited props if not present in the base class
+	        foreach (var prop in GlobalContainer.VSHelper.GetInheritedProperties(CodeClass))
+			{
+				var relation = GetRelation(prop);
+				if(relation.Type == ModelRelationType.None)
+					continue;
+				SetupRelation(relation);
+			    var oneRelation = relation as OneModelRelation;
+				if(oneRelation != null && oneRelation.GenerateSyntheticProperty)
+					RelatedModels.Add(relation);
+			}
+	    }
+
 	    //Define methods as virtual
 		foreach(var method in GlobalContainer.VSHelper.GetMethods(CodeClass))
         {
@@ -1529,8 +1539,10 @@ public class DomainModelWrapper
 			    method.OverrideKind = vsCMOverrideKind.vsCMOverrideKindVirtual;
         }
 
-		if(GlobalContainer.VSHelper.VisualStudioVersion < 14 || ProjectItem.IsOpen) //VS 2015 crash if the item is not open
-			ProjectItem.Save(); //Save the item
+		if (GlobalContainer.VSHelper.VisualStudioVersion >= 14 && !ProjectItem.IsOpen) //VS 2015 crash if the item is not open
+	        ProjectItem.Open();
+
+		ProjectItem.Save(); //Save the item
     }
 
     private void SetupRelation(ModelRelation relation)
@@ -1544,7 +1556,7 @@ public class DomainModelWrapper
         relation.RelatedModel = relatedType;
 		relation.RelatedModelEntityType = relatedType != null
 				        ? GlobalContainer.GetEntityType(relatedType.CodeClass, true)
-				        : GlobalContainer.Settings.GetEntityType(GlobalContainer.Settings.GetExternalType(relation.RelatedModelTypeFullName), true);
+				        : GlobalContainer.Settings.GetExternalEntityType(relation.RelatedModelTypeFullName, true);
 		relation.FieldName = GlobalContainer.VSHelper.GetFieldName(relation.PropertyName);
         relation.ParameterName = GlobalContainer.Singularize(GlobalContainer.VSHelper.FirstCharToLower(relation.PropertyName));
         if (!GlobalContainer.CSharpCodeProvider.IsValidIdentifier(relation.ParameterName))
@@ -1610,7 +1622,7 @@ public class DomainModelWrapper
                     oneRelation.SyntheticIsSetFieldName = "_is" + oneRelation.SyntheticPropertyName + "Set";
 					oneRelation.SyntheticPropertyMaxLength = relation.RelatedModelEntityType.GetIdentifierLength(relation.RelatedModelTypeFullName);
 				    oneRelation.GenerateSyntheticProperty = 
-				        GlobalContainer.VSHelper.GetInheritedProperties((CodeType) CodeClass)
+				        GlobalContainer.VSHelper.GetInheritedProperties(CodeClass)
 				            .All(o => o.Name != oneRelation.SyntheticPropertyName); //Check if is already defined
 				}
                 break;
@@ -1627,7 +1639,10 @@ public class DomainModelWrapper
             ? prop.Type.CodeType.FullName
             : GlobalContainer.VSHelper.GetGenericAgruments(prop.Type).First();
 
-	    var externalType = GlobalContainer.Settings.IsExternalType(typeFullName);
+		if(typeFullName.StartsWith("System."))
+			return new NoneModelRelation();
+
+        var externalType = /*!GlobalContainer.ProjectTypes.ContainsKey(typeFullName);*/GlobalContainer.Settings.IsExternalType(typeFullName); //ContainsKey does not work for generics
 
         //External type cannot have a bidirectional association
 	    if (!externalType)
@@ -1865,16 +1880,67 @@ public class DomainModelWrapper
 
         public string IdentifierLength { get; set; }
 
+		public List<AttributeIdentifierLength> AttributeIdentifierLengths { get; set; }
+
         public Dictionary<string,string> CustomIdentifierLengths { get; set; }
 
         public string GetIdentifierLength(string typeFullName)
         {
             if (CustomIdentifierLengths.ContainsKey(typeFullName))
                 return CustomIdentifierLengths[typeFullName];
+
+			//Check for attribute
+			if(AttributeIdentifierLengths.Any() && GlobalContainer.ProjectTypes.ContainsKey(typeFullName))
+			{
+				CodeAttribute2 attr = null;
+				foreach(var cls in GlobalContainer.ProjectTypes[typeFullName])
+				{
+					foreach(var attrLength in AttributeIdentifierLengths)
+					{
+						attr = GlobalContainer.VSHelper.GetAttribute(cls.Attributes, attrLength.Type);
+						if(attr != null)
+						{
+							if(attrLength.ParameterIndex.HasValue) //example: attr.Value = ""asdas",    11"
+							{
+								var values = attr.Value.Trim().Split(',')
+									.Where(o => o != null)
+									.Select(o => o.Trim())
+									.ToList();
+								if(attrLength.ParameterIndex.Value < values.Count)
+									return values[attrLength.ParameterIndex.Value];
+							}
+							else if(!string.IsNullOrEmpty(attrLength.PropertyName)) //example: attr.Value = "Test="asdas",   Length =   11"
+							{
+								var prop = attr.Value.Trim().Split(',')
+									.Where(o => o != null && o.Split('=').Length == 2)
+									.Select(o => new { 
+										Property = o.Trim().Split('=')[0].Trim(), 
+										Value = o.Trim().Split('=')[1].Trim() 
+									})
+									.FirstOrDefault(o => o.Property == attrLength.PropertyName);
+								if(prop != null)
+									return prop.Value; 
+							}
+
+							break;
+						}
+					}
+				}
+			}
+
             return IdentifierLength;
         }
     }
 
+	public class AttributeIdentifierLength
+	{
+		public string Type { get; set; }
+
+		public string PropertyName { get; set; }
+
+		public int? ParameterIndex { get; set; }
+	}
+	/*
     public class ExternalType
     {
         public string FullName { get; set; }
@@ -1882,7 +1948,7 @@ public class DomainModelWrapper
         public string DerivedFromType { get; set; }
 
     }
-
+	*/
 	public class Singularize
     {
         public string Pattern { get; set; }
@@ -1901,7 +1967,9 @@ public class DomainModelWrapper
 
         public bool AddLengthAttribute { get; set; }
 
-        public List<string> CustomAttributes { get; set; } 
+        public List<string> CustomAttributes { get; set; }
+
+		public bool GenerateForDeriveredTypes { get; set; }
     }
 
 	public class GenerateMetadata
@@ -1930,7 +1998,9 @@ public class DomainModelWrapper
                   Comment = xElement.XPathSelectElement("/SyntheticProperties/Comment").Value,
                   Generate = xElement.XPathSelectElement("/SyntheticProperties/Generate").Value.ToUpperInvariant() == "TRUE",
                   CustomAttributes = xElement.XPathSelectElements("SyntheticProperties/CustomAttributes//CustomAttribute")
-                    .Select(o => o.Value).ToList()
+                    .Select(o => o.Value).ToList(),
+				GenerateForDeriveredTypes = xElement.XPathSelectElement("/SyntheticProperties/GenerateForDeriveredTypes") != null &&
+					xElement.XPathSelectElement("/SyntheticProperties/GenerateForDeriveredTypes").Value.ToUpperInvariant() == "TRUE"
                 },
                 EntityTypes = xElement.XPathSelectElements("/EntityTypes//EntityType")
                 .Select(o => new EntityType
@@ -1943,17 +2013,32 @@ public class DomainModelWrapper
                     IdentifierLength = o.XPathSelectElement("IdentifierLength") != null 
                         ? o.XPathSelectElement("IdentifierLength").Value
                         : null,
+
+					AttributeIdentifierLengths = o.XPathSelectElements("AttributeIdentifierLengths//AttributeIdentifierLength").Any()
+						? new List<AttributeIdentifierLength>(o.XPathSelectElements("AttributeIdentifierLengths//AttributeIdentifierLength")
+							.Select(attr => new AttributeIdentifierLength
+								{
+									Type = attr.XPathSelectElement("Type").Value,
+									PropertyName = attr.XPathSelectElement("PropertyName") != null
+										? attr.XPathSelectElement("PropertyName").Value
+										: null,
+									ParameterIndex = attr.XPathSelectElement("ParameterIndex") != null
+										? int.Parse(attr.XPathSelectElement("ParameterIndex").Value)
+										: (int?)null,
+								}))
+						: new List<AttributeIdentifierLength>(),
                     CustomIdentifierLengths = o.XPathSelectElements("CustomIdentifierLengths//CustomIdentifierLength").Any()
                         ? o.XPathSelectElements("CustomIdentifierLengths//CustomIdentifierLength")
                             .ToDictionary(c => c.XPathSelectElement("Type").Value, c => c.XPathSelectElement("Length").Value)
                         : new Dictionary<string,string>()
                 }).ToList(),
+				/*
                 ExternalTypes = new List<ExternalType>(xElement.XPathSelectElements("/ExternalTypes//ExternalType")
                     .Select(o => new ExternalType
                     {
                         DerivedFromType = o.XPathSelectElement("DerivedFromType").Value,
                         FullName = o.XPathSelectElement("FullName").Value,
-                    })),
+                    })),*/
 				Singularization = new List<Singularize>(xElement.XPathSelectElements("/Singularization//Singularize")
                     .Select(o => new Singularize
                     {
@@ -1967,9 +2052,12 @@ public class DomainModelWrapper
                 IgnoreTypes = new HashSet<string>(xElement.XPathSelectElements("/IgnoreTypes//IgnoreType").Select(o => o.Value)),
                 NotNullAttribute = xElement.XPathSelectElement("/NotNullAttribute").Value,
                 LengthAttribute = xElement.XPathSelectElement("/LengthAttribute").Value,
+
+				ExternalAssemblies = new List<Assembly>(xElement.XPathSelectElements("/ExternalAssemblies//ExternalAssemblyPath")
+                    .Select(o => Assembly.LoadFile(GlobalContainer.VSHelper.GetFullPathByRelativeToCurrentProject(o.Value)))),
+
             };
 
-			
 			var csFilePath = path.Replace("T4FluentNH.tt.settings.xml", "T4FluentNH.cs"); //Get File name
             settings.WasModified = !File.Exists(csFilePath) ||
                                    File.GetLastWriteTime(path) > File.GetLastWriteTime(csFilePath);
@@ -1989,23 +2077,48 @@ public class DomainModelWrapper
             return eType;
         }
 
-        public EntityType GetEntityType(ExternalType externalType, bool throwIfNotFound)
+        public EntityType GetExternalEntityType(string typeFullName, bool throwIfNotFound)
         {
-            var eType = EntityTypes.FirstOrDefault(o => o.DerivedFromType == externalType.DerivedFromType);
-            if(eType == null && throwIfNotFound)
-                throw new Exception("EntityType that derives from type " + externalType.DerivedFromType + " does not exists");
-            return eType;
+            var type = ExternalAssemblies
+				.Select(o => o.GetType(typeFullName))
+				.Where(o => o != null)
+				.FirstOrDefault();
+
+			if(type == null)
+                throw new Exception(typeFullName + " was not found in the external assembiles.");
+			var dictEntityTypes = EntityTypes.ToDictionary(o => o.DerivedFromType);
+            if (dictEntityTypes.ContainsKey(type.FullName))
+                return dictEntityTypes[type.FullName];
+            
+            var currType = type;
+            while (currType.BaseType != null)
+            {
+				if (dictEntityTypes.ContainsKey(currType.FullName))
+					return dictEntityTypes[currType.FullName];
+                currType = currType.BaseType;
+            }
+
+            foreach (var i in type.GetInterfaces().Where(i => dictEntityTypes.ContainsKey(i.FullName)))
+            {
+                return dictEntityTypes[i.FullName];
+            }
+
+            if(throwIfNotFound)
+                throw new Exception("EntityType that derives from type " + typeFullName + " does not exists");
+            return null;
         }
 
         public bool IsExternalType(string typeFullName)
         {
-            return ExternalTypes.Any(o => o.FullName == typeFullName);
-        }
+            return ExternalAssemblies.Any(o => o.GetType(typeFullName) != null);
 
-        public ExternalType GetExternalType(string typeFullName)
+            //return ExternalTypes.Any(o => o.FullName == typeFullName);
+        }
+		
+        /*public ExternalType GetExternalType(string typeFullName)
         {
             return ExternalTypes.FirstOrDefault(o => o.FullName == typeFullName);
-        }
+        }*/
 
         public string NotNullAttribute { get; set; }
 
@@ -2013,7 +2126,7 @@ public class DomainModelWrapper
         
         public HashSet<string> IgnoreTypes { get; set; }
 
-        public List<ExternalType> ExternalTypes { get; set; }
+        //public List<ExternalType> ExternalTypes { get; set; }
 
 		public List<Singularize> Singularization { get; set; }
 
@@ -2028,6 +2141,8 @@ public class DomainModelWrapper
         public GenerateMetadata GenerateMetadata { get; set; }
 
 		public bool WasModified { get; set; }
+
+		public List<Assembly> ExternalAssemblies { get;set; } 
 
     }
 

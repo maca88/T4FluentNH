@@ -107,6 +107,11 @@ public class VisualStudioHelper : AutomationHelper
 		return PluralizationService.Singularize(name);
 	}
 
+	public List<CodeProperty> GetInheritedProperties(CodeClass2 codeClass)
+    {
+        return GetInheritedProperties((CodeType) codeClass);
+    }
+
     public List<CodeProperty> GetInheritedProperties(CodeType element)
     {
         // If it's a local code element, we may be able to enumerate all its partial classes
@@ -553,6 +558,11 @@ public class VisualStudioHelper : AutomationHelper
 
 	public string GetPropertyType(CodeProperty prop)
 	{
+		if (prop.InfoLocation == vsCMInfoLocation.vsCMInfoLocationExternal)
+	    {
+	        return prop.Type.AsFullName;
+	    }
+
 		var codeStart = prop.StartPoint.CreateEditPoint();
 		var codeFinish = prop.EndPoint;
 		var functionText = codeStart.GetText(codeFinish);
@@ -788,6 +798,11 @@ public class VisualStudioHelper : AutomationHelper
 		// Make a virtual path from the physical path
 		return fileFullPath.Substring(appRoot.Length);
 	}
+
+	public string GetFullPathByRelativeToCurrentProject(string relative)
+    {
+        return Path.Combine(Path.GetDirectoryName(CurrentProject.FullName), relative);
+    }
 
 	public void ProcessTypes(ProjectItem file, Action<CodeClass2, ProjectItem> typeAction)
 	{

@@ -93,15 +93,23 @@
     <Compile Include="Dog.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
+    <Compile Include="EntityTypes\ETAttrLengthByIndexCodeList.cs" />
     <Compile Include="EntityTypes\ETCodeListEntity.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="EntityTypes\ETInheritedCodeListEntity.cs" />
+    <Compile Include="EntityTypes\ETAttrLengthByPropertyCodeList.cs" />
     <Compile Include="EntityTypes\ETLengthCodeList.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="EntityTypes\ETSimpleEntity.cs">
       <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ETAttrLengthByIndexCodeList.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="ETAttrLengthByPropertyCodeList.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
     <Compile Include="ETCodeListEntity.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
@@ -120,7 +128,11 @@
     <Compile Include="External\ExtTest.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="External\ExtVersionedEntity.cs" />
     <Compile Include="ExtTest.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
+    <Compile Include="ExtVersionedEntity.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
     <Compile Include="Generics\GenOrganization.cs" />
@@ -149,6 +161,8 @@
     <Compile Include="GenUserRole%28TUser%29.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
+    <Compile Include="IdentifierLengthAttributeByIndex.cs" />
+    <Compile Include="IdentifierLengthAttributeByProperty.cs" />
     <Compile Include="Inheritance\Animal.cs" />
     <Compile Include="Inheritance\Cat.cs" />
     <Compile Include="Inheritance\Dog.cs" />

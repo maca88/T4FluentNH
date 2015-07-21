@@ -27,5 +27,17 @@ namespace T4FluentNH.Tests.EntityTypes
             get { return _lengthCodeListEntity; }
             set { ResetField(ref _lengthCodeListEntity, value, ref _isLengthCodeListEntityCodeSet); }
         }
+
+        public virtual ETAttrLengthByIndexCodeList AttrLengthByIndexCodeList
+        {
+            get { return _attrLengthByIndexCodeList; }
+            set { ResetField(ref _attrLengthByIndexCodeList, value, ref _isAttrLengthByIndexCodeListCodeSet); }
+        }
+
+        public virtual ETAttrLengthByPropertyCodeList AttrLengthByPropertyCodeList
+        {
+            get { return _attrLengthByPropertyCodeList; }
+            set { ResetField(ref _attrLengthByPropertyCodeList, value, ref _isAttrLengthByPropertyCodeListCodeSet); }
+        }
     }
 }
