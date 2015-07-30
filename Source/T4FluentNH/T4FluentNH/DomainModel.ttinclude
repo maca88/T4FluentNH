@@ -1533,7 +1533,10 @@ public class DomainModelWrapper
 	    }
 
 	    //Define methods as virtual
-		foreach(var method in GlobalContainer.VSHelper.GetMethods(CodeClass))
+		foreach(var method in GlobalContainer.VSHelper.GetMethods(CodeClass)
+				.Where(o => o.Access != vsCMAccess.vsCMAccessPrivate)
+				.Where(o => o.OverrideKind != vsCMOverrideKind.vsCMOverrideKindAbstract)
+				.Where(o => o.OverrideKind != vsCMOverrideKind.vsCMOverrideKindOverride))
         {
             if(method.Access != vsCMAccess.vsCMAccessPrivate)
 			    method.OverrideKind = vsCMOverrideKind.vsCMOverrideKindVirtual;
@@ -2054,7 +2057,21 @@ public class DomainModelWrapper
                 LengthAttribute = xElement.XPathSelectElement("/LengthAttribute").Value,
 
 				ExternalAssemblies = new List<Assembly>(xElement.XPathSelectElements("/ExternalAssemblies//ExternalAssemblyPath")
-                    .Select(o => Assembly.LoadFile(GlobalContainer.VSHelper.GetFullPathByRelativeToCurrentProject(o.Value)))),
+                    .Select(o =>
+                    {
+						byte[] data;
+                        var assemblyPath = GlobalContainer.VSHelper.GetFullPathByRelativeToCurrentProject(o.Value);
+						using (var fs = File.OpenRead(assemblyPath))
+						{
+							data = new byte[fs.Length];
+							fs.Read(data, 0, Convert.ToInt32(fs.Length));
+						}
+						if (data.Length == 0)
+						{
+							throw new ApplicationException("Failed to load " + assemblyPath);
+						}
+						return Assembly.Load(data);
+                    })),
 
             };
 

@@ -8,5 +8,11 @@ namespace T4FluentNH.Tests.Inheritance
 {
     public partial class Dog : Animal
     {
+        public override string Name { get; set; }
+
+        public override string GetSomething()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
