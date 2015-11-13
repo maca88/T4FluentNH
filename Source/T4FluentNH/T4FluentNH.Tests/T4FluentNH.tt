@@ -127,8 +127,22 @@ VSHelper.ProcessFiles(GlobalContainer.ProjectItems, (file, name) => VSHelper.Pro
 		if(mapOverride == null) return;
 		var overrideType = VSHelper.GetGenericAgruments(mapOverride.FullName)[0];
 		if(overrideType == null) return;
-		if(!GlobalContainer.Overrides.ContainsKey(overrideType))
-			GlobalContainer.Overrides.Add(overrideType, new Dictionary<string, ModelRelation>());
+
+		//get override method
+		var method = VSHelper.GetMethod(type, "Override");
+		if(method == null) return;
+
+        if (!GlobalContainer.Overrides.ContainsKey(overrideType))
+        {
+            var entityOverride = new EntityOverride
+            {
+				Class = type,
+				OverrideMethod = method,
+				OverrideType = overrideType
+            };
+			GlobalContainer.Overrides.Add(overrideType, entityOverride);
+        }
+			
 
 		//VSHelper.Warning("Overrides found for type " + overrideType);
 
@@ -137,234 +151,276 @@ VSHelper.ProcessFiles(GlobalContainer.ProjectItems, (file, name) => VSHelper.Pro
 
 		GlobalContainer.EntityProjectItems[overrideType].AddOverrideFile(pItem);
 
-        EntityType entityType = null;
+	}));
 
-		//Get properties for overriden type
-		var properties = new Dictionary<string, CodeProperty>();
-		foreach(var partialType in GlobalContainer.ProjectTypes[overrideType])
+foreach (var pair in GlobalContainer.Overrides.ToList()) // clone as the collection will be modified
+{
+    var overrideType = pair.Key;
+    var entityOverride = pair.Value;
+    
+    EntityType entityType = null;
+
+	//Get properties for overriden type
+	var properties = new Dictionary<string, CodeProperty>();
+	foreach(var partialType in GlobalContainer.ProjectTypes[overrideType])
+	{
+		if (entityType == null)
+		    entityType = GlobalContainer.Settings.GetEntityType(VSHelper, partialType, false);
+
+		foreach (var p in VSHelper.GetProperties(partialType))
 		{
-		    if (entityType == null)
-		        entityType = GlobalContainer.Settings.GetEntityType(VSHelper, partialType, false);
-
-		    foreach (var p in VSHelper.GetProperties(partialType))
-		    {
-		        if(properties.ContainsKey(p.Name))
-					throw new Exception(string.Format("Duplicate property {0} inside type {1}", p.Name, partialType.FullName));
-				properties.Add(p.Name, p);
-		    }
+		    if(properties.ContainsKey(p.Name))
+				throw new Exception(string.Format("Duplicate property {0} inside type {1}", p.Name, partialType.FullName));
+			properties.Add(p.Name, p);
+		}
 				
-        }
+    }
 
-        if(entityType == null)
-            throw new Exception("EntityType for type " + overrideType + " does not exists");
+    if(entityType == null)
+        throw new Exception("EntityType for type " + overrideType + " does not exists");
 
-		//get override method
-		var method = VSHelper.GetMethod(type, "Override");
-		if(method == null) return;
-		var functionText = VSHelper.GetCodeFunctionText(method);
+    if (entityOverride.OverrideMethod == null)
+        continue;
+
+	var functionText = VSHelper.GetCodeFunctionText(entityOverride.OverrideMethod);
 		
-        //Components
-        var compRegex = new Regex(@"\.Component\([\w\s]+=>[\s\w]+\.([\w\d]+)");
-        var compMatches = compRegex.Matches(functionText);
-        foreach (var match in compMatches.OfType<Match>().Where(o => o.Success))
+    //Components
+    var compRegex = new Regex(@"\.Component\([\w\s]+=>[\s\w]+\.([\w\d]+)");
+    var compMatches = compRegex.Matches(functionText);
+    foreach (var match in compMatches.OfType<Match>().Where(o => o.Success))
+    {
+        var propName = match.Groups[1].Value;
+        if(!properties.ContainsKey(propName)) continue;
+        var prop = properties[propName];
+        if(prop == null) throw new Exception("prop null");
+        if(!GlobalContainer.Components.ContainsKey(overrideType))
+            GlobalContainer.Components.Add(overrideType, new Dictionary<string, CodeProperty>());
+        GlobalContainer.Components[overrideType].Add(propName, prop);
+    }
+
+    //oneToMany relation
+	var oneToManyRegex = new Regex(@"\.HasMany\([\w\s]+=>[\s\w]+\.([\w\d]+)\)([^;]*)");
+	var oneToManyMatches = oneToManyRegex.Matches(functionText);
+	foreach(var match in oneToManyMatches.OfType<Match>().Where(o => o.Success))
+    {
+		var propName = match.Groups[1].Value;
+		var extraCalls = match.Groups[2].Value;
+        if(!properties.ContainsKey(propName)) continue;
+        var prop = properties[propName];
+        if(prop == null) throw new Exception("prop null");
+		var relatedPropType = VSHelper.GetGenericAgruments(prop.Type).First();
+		if(relatedPropType == null) throw new Exception("relatedPropType null");
+
+        var relatedPropName = "";
+        var keyColumn = "";
+
+        //KeyColumn - support KeyColumn(o => o.Category) or KeyColumn("CategoryId")
+        var keyColumnRegex = new Regex(@"\.KeyColumn\([\w\s]+=>[\s\w]+\.([\w\d]+)\)|\.KeyColumn\(""([\w\d]+)""\)");
+		var keyColumnMatches = keyColumnRegex.Matches(extraCalls);
+        foreach (var keyColumnMatch in keyColumnMatches.OfType<Match>().Where(o => o.Success))
         {
-            var propName = match.Groups[1].Value;
-            if(!properties.ContainsKey(propName)) continue;
-            var prop = properties[propName];
-            if(prop == null) throw new Exception("prop null");
-            if(!GlobalContainer.Components.ContainsKey(overrideType))
-                GlobalContainer.Components.Add(overrideType, new Dictionary<string, CodeProperty>());
-            GlobalContainer.Components[overrideType].Add(propName, prop);
-        }
-
-        //oneToMany relation
-		var oneToManyRegex = new Regex(@"\.HasMany\([\w\s]+=>[\s\w]+\.([\w\d]+)\)([^;]*)");
-		var oneToManyMatches = oneToManyRegex.Matches(functionText);
-		foreach(var match in oneToManyMatches.OfType<Match>().Where(o => o.Success))
-        {
-			var propName = match.Groups[1].Value;
-			var extraCalls = match.Groups[2].Value;
-            if(!properties.ContainsKey(propName)) continue;
-            var prop = properties[propName];
-            if(prop == null) throw new Exception("prop null");
-			var relatedPropType = VSHelper.GetGenericAgruments(prop.Type).First();
-			if(relatedPropType == null) throw new Exception("relatedPropType null");
-
-            var relatedPropName = "";
-            var keyColumn = "";
-
-            //KeyColumn - support KeyColumn(o => o.Category) or KeyColumn("CategoryId")
-            var keyColumnRegex = new Regex(@"\.KeyColumn\([\w\s]+=>[\s\w]+\.([\w\d]+)\)|\.KeyColumn\(""([\w\d]+)""\)");
-		    var keyColumnMatches = keyColumnRegex.Matches(extraCalls);
-            foreach (var keyColumnMatch in keyColumnMatches.OfType<Match>().Where(o => o.Success))
+            if (!string.IsNullOrEmpty(keyColumnMatch.Groups[1].Value)) // if an expression if found then the value is the name of the related property (not fk)
             {
-                keyColumn = !string.IsNullOrEmpty(keyColumnMatch.Groups[1].Value)
-                    ? entityType.KeyColumnPrefix + keyColumnMatch.Groups[1].Value + entityType.KeyColumnPostfix
-                    : keyColumnMatch.Groups[2].Value;
-                relatedPropName = VSHelper.Trim(keyColumn, entityType.KeyColumnPrefix, entityType.KeyColumnPostfix);
-            }
-
-            //PropertyRef - support PropertyRef(o => o.Category) or PropertyRef("CategoryId")
-            var propRefRegex = new Regex(@"\.PropertyRef\([\w\s]+=>[\s\w]+\.([\w\d]+)\)|\.PropertyRef\(""([\w\d]+)""\)");
-		    var propRefMatches = propRefRegex.Matches(extraCalls);
-            foreach (var propRefMatch in propRefMatches.OfType<Match>().Where(o => o.Success))
-            {
-                relatedPropName = !string.IsNullOrEmpty(propRefMatch.Groups[1].Value)
-                    ? propRefMatch.Groups[1].Value
-                    : propRefMatch.Groups[2].Value;
-            }
-
-            if (string.IsNullOrEmpty(relatedPropName)) continue;
-
-            //CollectionType - support AsBag(), AsList(), AsSet
-            var collTypeRegex = new Regex(@"\.(AsList|AsSet|AsBag)");
-            var collTypeMatches = collTypeRegex.Matches(extraCalls);
-            var colType = CollectionMapType.Unknown;
-            foreach (var collTypeMatch in collTypeMatches.OfType<Match>().Where(o => o.Success))
-            {
-                var cType = collTypeMatch.Groups[1].Value;
-                switch(cType)
-                {
-                    case "AsSet":
-                        colType = CollectionMapType.Set;
-                        break;
-                    case "AsList":
-                        colType = CollectionMapType.List;
-                        break;
-                    case "AsBag":
-                        colType = CollectionMapType.Bag;
-                        break;
-                }
-            }
-
-            var relatedProp = VSHelper.GetProperties(GlobalContainer.ProjectTypes[relatedPropType], true).FirstOrDefault(o => o.Name == relatedPropName);
-            var assocType = relatedProp == null ? AssociationType.Unidirectional : AssociationType.Bidirectional;
-            
-            //Add oneToMany
-			GlobalContainer.Overrides[overrideType][propName] =
-				new OneToManyModelRelation
-						{
-							RelatedModelTypeFullName =relatedPropType,
-							CollectionType = VSHelper.GetPropertyType(prop),
-                            CollectionMapType = colType,
-							Property = prop, //many
-                            KeyColumn = keyColumn,
-							PathInRelatedModel = relatedProp == null ? null : relatedPropName, //one
-                            AssociationType = assocType
-						};
-
-            //Add manyToOne
-            var manyToOneRelation = new ManyToOneModelRelation
-            {
-                RelatedModelTypeFullName = overrideType,
-                Property = relatedProp,
-                KeyColumn = keyColumn,
-                PathInRelatedModel = propName,
-                AssociationType = assocType
-            };
-
-            if (relatedProp == null) //Unidirectional association
-            {
-                GlobalContainer.AddGlobalModelRelation(relatedPropType, manyToOneRelation);
+                keyColumn = entityType.KeyColumnPrefix + keyColumnMatch.Groups[1].Value + entityType.KeyColumnPostfix;
+                relatedPropName = keyColumnMatch.Groups[1].Value;
             }
             else
             {
-                if(!GlobalContainer.Overrides.ContainsKey(relatedPropType))
-				    GlobalContainer.Overrides.Add(relatedPropType, new Dictionary<string, ModelRelation>());
-                GlobalContainer.Overrides[relatedPropType][relatedPropName] = manyToOneRelation;
-            }
-
-        }
-
-		//oneToOne relation
-		var oneToOneRegex = new Regex(@"\.HasOne\([\w\s]+=>[\s\w]+\.([\w\d]+)\)([^;]*)");
-		var oneToOneMatches = oneToOneRegex.Matches(functionText);
-		foreach(var match in oneToOneMatches.OfType<Match>().Where(o => o.Success))
-        {
-			var propName = match.Groups[1].Value;
-			var extraCalls = match.Groups[2].Value;
-			var prop = properties[propName];
-			if(prop == null) throw new Exception("prop null");
-			var relatedPropType = prop.Type.CodeType.FullName;
-
-            //PropertyRef - support PropertyRef(o => o.Category) or PropertyRef("CategoryId")
-            var propRefRegex = new Regex(@"\.PropertyRef\([\w\s]+=>[\s\w]+\.([\w\d]+)\)|\.PropertyRef\(""([\w\d]+)""\)");
-		    var propRefMatches = propRefRegex.Matches(extraCalls);
-            var relatedPropName = "";
-            foreach (var propRefMatch in propRefMatches.OfType<Match>().Where(o => o.Success))
-            {
-                relatedPropName = !string.IsNullOrEmpty(propRefMatch.Groups[1].Value)
-                    ? propRefMatch.Groups[1].Value
-                    : propRefMatch.Groups[2].Value;
-            }
-            if (string.IsNullOrEmpty(relatedPropName)) continue;
-            var relatedProp = VSHelper.GetProperties(GlobalContainer.ProjectTypes[relatedPropType]).First(o => o.Name == relatedPropName);
-
-			//Add oneToOne
-			GlobalContainer.Overrides[overrideType][propName] =
-				new OneToOneModelRelation
-						{
-							RelatedModelTypeFullName = relatedPropType,
-							Property = prop, 
-							PathInRelatedModel = relatedPropName ,
-                            AssociationType = AssociationType.Bidirectional
-						};
-			//Add one to one
-			if(!GlobalContainer.Overrides.ContainsKey(relatedPropType))
-				GlobalContainer.Overrides.Add(relatedPropType, new Dictionary<string, ModelRelation>());
-
-			if(!GlobalContainer.Overrides[relatedPropType].ContainsKey(relatedPropName)) //if is not self related
-            {
-				GlobalContainer.Overrides[relatedPropType].Add(relatedPropName,
-				new OneToOneModelRelation
-						{
-							RelatedModelTypeFullName = overrideType,
-							Property = relatedProp, 
-							PathInRelatedModel = propName,
-                            AssociationType = AssociationType.Bidirectional
-						});
-            }
-        }
-
-		//manyToMany relation
-		var manyToManyRegex = new Regex(@"\.HasManyToMany\([\w\s]+=>[\s\w]+\.([\w\d]+)\)");
-		var manyToManyMatches = manyToManyRegex.Matches(functionText);
-		foreach(Match match in manyToManyMatches)
-        {
-			if (!match.Success) continue;
-			var propName = match.Groups[1].Value;
-			var prop = properties[propName];
-			if(prop == null) throw new Exception("prop null");
-			var relatedPropType = VSHelper.GetGenericAgruments(prop.Type).First();
-
-			foreach(var relPartialType in GlobalContainer.ProjectTypes[relatedPropType])
-            {
-				foreach(var relTypeProp in VSHelper.GetProperties(relPartialType))
-				{
-					//VSHelper.Warning(type.FullName + " - " +overrideType + " - " + relTypeProp.Name +" - "+ VSHelper.GetGenericAgruments(relTypeProp.Type).FirstOrDefault());
-					if(
-						VSHelper.IsNHibernateProperty(relTypeProp) &&
-						VSHelper.IsGeneric(relTypeProp.Type) &&
-						VSHelper.GetGenericAgruments(relTypeProp.Type).FirstOrDefault() == overrideType &&
-						!GlobalContainer.Overrides[overrideType].ContainsKey(propName))
+                keyColumn = keyColumnMatch.Groups[2].Value;
+				// check if the key column is a string with the right convention
+                if (
+                    (string.IsNullOrEmpty(entityType.KeyColumnPrefix) || keyColumn.StartsWith(entityType.KeyColumnPrefix)) &&
+                    (string.IsNullOrEmpty(entityType.KeyColumnPostfix) || keyColumn.EndsWith(entityType.KeyColumnPostfix))
+                    )
+                {
+                    relatedPropName = VSHelper.Trim(keyColumn, entityType.KeyColumnPrefix, entityType.KeyColumnPostfix);
+                }
+                else
+                {
+                    // we need to find out on which property the column is mapped
+                    if (!GlobalContainer.Overrides.ContainsKey(relatedPropType))
                     {
-						//add manyToMany
-						GlobalContainer.Overrides[overrideType][propName] =
-							new ManyToManyModelRelation
-									{
-										RelatedModelTypeFullName = relatedPropType,
-										CollectionType = VSHelper.GetPropertyType(prop),
-										Property = prop, 
-										PathInRelatedModel = relTypeProp.Name,
-                                        AssociationType = AssociationType.Bidirectional
-									};
-                    }	
-				}
+                        continue; // Unidirectional relation
+                    }
+                    var relatedOverride = GlobalContainer.Overrides[relatedPropType];
+					var relatedOverrideMethodText = VSHelper.GetCodeFunctionText(relatedOverride.OverrideMethod);
+                    var relatedPropRegex = new Regex(string.Format(@".References\([\w\s]+=>[\s\w]+\.([\w\d]+)\)([^;]*).Column\(""{0}""\)", keyColumn));
+                    var realtedPropMatches = relatedPropRegex.Matches(relatedOverrideMethodText).OfType<Match>().Where(o => o.Success).ToList();
+                    if (!realtedPropMatches.Any())
+                    {
+                        throw new Exception(string.Format("Could not find the releated property whitin type '{0}' that should be mapped as column '{1}'", relatedPropType, keyColumn));
+                    }
+                    if (realtedPropMatches.Count > 1)
+                    {
+                        throw new Exception(string.Format("There are more than one releated properties whitin type '{0}' that are mapped as column '{1}'", relatedPropType, keyColumn));
+                    }
+                    relatedPropName = realtedPropMatches.First().Groups[1].Value;
+					keyColumn = entityType.KeyColumnPrefix + relatedPropName + entityType.KeyColumnPostfix;
+                }
             }
+        }
+
+        //PropertyRef - support PropertyRef(o => o.Category) or PropertyRef("CategoryId")
+        var propRefRegex = new Regex(@"\.PropertyRef\([\w\s]+=>[\s\w]+\.([\w\d]+)\)|\.PropertyRef\(""([\w\d]+)""\)");
+		var propRefMatches = propRefRegex.Matches(extraCalls);
+        foreach (var propRefMatch in propRefMatches.OfType<Match>().Where(o => o.Success))
+        {
+            relatedPropName = !string.IsNullOrEmpty(propRefMatch.Groups[1].Value)
+                ? propRefMatch.Groups[1].Value
+                : propRefMatch.Groups[2].Value;
+        }
+
+        if (string.IsNullOrEmpty(relatedPropName)) continue;
+
+        //CollectionType - support AsBag(), AsList(), AsSet
+        var collTypeRegex = new Regex(@"\.(AsList|AsSet|AsBag)");
+        var collTypeMatches = collTypeRegex.Matches(extraCalls);
+        var colType = CollectionMapType.Unknown;
+        foreach (var collTypeMatch in collTypeMatches.OfType<Match>().Where(o => o.Success))
+        {
+            var cType = collTypeMatch.Groups[1].Value;
+            switch(cType)
+            {
+                case "AsSet":
+                    colType = CollectionMapType.Set;
+                    break;
+                case "AsList":
+                    colType = CollectionMapType.List;
+                    break;
+                case "AsBag":
+                    colType = CollectionMapType.Bag;
+                    break;
+            }
+        }
+
+        var relatedProp = VSHelper.GetProperties(GlobalContainer.ProjectTypes[relatedPropType], true).FirstOrDefault(o => o.Name == relatedPropName);
+        var assocType = relatedProp == null ? AssociationType.Unidirectional : AssociationType.Bidirectional;
+            
+        //Add oneToMany
+		GlobalContainer.Overrides[overrideType].Relations[propName] =
+			new OneToManyModelRelation
+					{
+						RelatedModelTypeFullName =relatedPropType,
+						CollectionType = VSHelper.GetPropertyType(prop),
+                        CollectionMapType = colType,
+						Property = prop, //many
+                        KeyColumn = keyColumn,
+						PathInRelatedModel = relatedProp == null ? null : relatedPropName, //one
+                        AssociationType = assocType
+					};
+
+        //Add manyToOne
+        var manyToOneRelation = new ManyToOneModelRelation
+        {
+            RelatedModelTypeFullName = overrideType,
+            Property = relatedProp,
+            KeyColumn = keyColumn,
+            PathInRelatedModel = propName,
+            AssociationType = assocType
+        };
+
+        if (relatedProp == null) //Unidirectional association
+        {
+            GlobalContainer.AddGlobalModelRelation(relatedPropType, manyToOneRelation);
+        }
+        else
+        {
+            if(!GlobalContainer.Overrides.ContainsKey(relatedPropType))
+				GlobalContainer.Overrides.Add(relatedPropType, new EntityOverride());
+            GlobalContainer.Overrides[relatedPropType].Relations[relatedPropName] = manyToOneRelation;
+        }
+
+    }
+
+	//oneToOne relation
+	var oneToOneRegex = new Regex(@"\.HasOne\([\w\s]+=>[\s\w]+\.([\w\d]+)\)([^;]*)");
+	var oneToOneMatches = oneToOneRegex.Matches(functionText);
+	foreach(var match in oneToOneMatches.OfType<Match>().Where(o => o.Success))
+    {
+		var propName = match.Groups[1].Value;
+		var extraCalls = match.Groups[2].Value;
+		var prop = properties[propName];
+		if(prop == null) throw new Exception("prop null");
+		var relatedPropType = prop.Type.CodeType.FullName;
+
+        //PropertyRef - support PropertyRef(o => o.Category) or PropertyRef("CategoryId")
+        var propRefRegex = new Regex(@"\.PropertyRef\([\w\s]+=>[\s\w]+\.([\w\d]+)\)|\.PropertyRef\(""([\w\d]+)""\)");
+		var propRefMatches = propRefRegex.Matches(extraCalls);
+        var relatedPropName = "";
+        foreach (var propRefMatch in propRefMatches.OfType<Match>().Where(o => o.Success))
+        {
+            relatedPropName = !string.IsNullOrEmpty(propRefMatch.Groups[1].Value)
+                ? propRefMatch.Groups[1].Value
+                : propRefMatch.Groups[2].Value;
+        }
+        if (string.IsNullOrEmpty(relatedPropName)) continue;
+        var relatedProp = VSHelper.GetProperties(GlobalContainer.ProjectTypes[relatedPropType]).First(o => o.Name == relatedPropName);
+
+		//Add oneToOne
+		GlobalContainer.Overrides[overrideType].Relations[propName] =
+			new OneToOneModelRelation
+					{
+						RelatedModelTypeFullName = relatedPropType,
+						Property = prop, 
+						PathInRelatedModel = relatedPropName ,
+                        AssociationType = AssociationType.Bidirectional
+					};
+		//Add one to one
+		if(!GlobalContainer.Overrides.ContainsKey(relatedPropType))
+			GlobalContainer.Overrides.Add(relatedPropType, new EntityOverride());
+
+		if(!GlobalContainer.Overrides[relatedPropType].Relations.ContainsKey(relatedPropName)) //if is not self related
+        {
+			GlobalContainer.Overrides[relatedPropType].Relations.Add(relatedPropName,
+			new OneToOneModelRelation
+					{
+						RelatedModelTypeFullName = overrideType,
+						Property = relatedProp, 
+						PathInRelatedModel = propName,
+                        AssociationType = AssociationType.Bidirectional
+					});
+        }
+    }
+
+	//manyToMany relation
+	var manyToManyRegex = new Regex(@"\.HasManyToMany\([\w\s]+=>[\s\w]+\.([\w\d]+)\)");
+	var manyToManyMatches = manyToManyRegex.Matches(functionText);
+	foreach(Match match in manyToManyMatches)
+    {
+		if (!match.Success) continue;
+		var propName = match.Groups[1].Value;
+		var prop = properties[propName];
+		if(prop == null) throw new Exception("prop null");
+		var relatedPropType = VSHelper.GetGenericAgruments(prop.Type).First();
+
+		foreach(var relPartialType in GlobalContainer.ProjectTypes[relatedPropType])
+        {
+			foreach(var relTypeProp in VSHelper.GetProperties(relPartialType))
+			{
+				//VSHelper.Warning(type.FullName + " - " +overrideType + " - " + relTypeProp.Name +" - "+ VSHelper.GetGenericAgruments(relTypeProp.Type).FirstOrDefault());
+				if(
+					VSHelper.IsNHibernateProperty(relTypeProp) &&
+					VSHelper.IsGeneric(relTypeProp.Type) &&
+					VSHelper.GetGenericAgruments(relTypeProp.Type).FirstOrDefault() == overrideType &&
+					!GlobalContainer.Overrides[overrideType].Relations.ContainsKey(propName))
+                {
+					//add manyToMany
+					GlobalContainer.Overrides[overrideType].Relations[propName] =
+						new ManyToManyModelRelation
+								{
+									RelatedModelTypeFullName = relatedPropType,
+									CollectionType = VSHelper.GetPropertyType(prop),
+									Property = prop, 
+									PathInRelatedModel = relTypeProp.Name,
+                                    AssociationType = AssociationType.Bidirectional
+								};
+                }	
+			}
+        }
 
 			
-        }
-	}));
+    }
+} // end forech overrides
 
 #endregion
 
@@ -1311,7 +1367,10 @@ public class EntityProjectItem
         if (string.IsNullOrEmpty(GeneratedFilePath)) return true;
 
 		//Get EntityProjectItem instance from the generated file
-        var genFileText = File.ReadAllText(GetFullPathByRelative(GeneratedFilePath));
+        var path = GetFullPathByRelative(GeneratedFilePath);
+        if (!File.Exists(path))
+            return true;
+        var genFileText = File.ReadAllText(path);
         var match = Regex.Match(genFileText, "//(<EntityProjectItem.*</EntityProjectItem>)");
         if (!match.Success) return true;
         var xml = match.Groups[1].Value;
@@ -1390,7 +1449,7 @@ public static class GlobalContainer
 
     public static HashSet<string> KnownNamespaces;
 
-    public static Dictionary<string, Dictionary<string, ModelRelation>> Overrides; //Dict<typeFullName, Dict<propName, Relation>>
+    public static Dictionary<string, EntityOverride> Overrides; //Dict<typeFullName, Dict<propName, Relation>>
 
     public static Dictionary<string, List<CodeClass2>> ProjectTypes;
 
@@ -1440,7 +1499,7 @@ public static class GlobalContainer
 	{
 		GlobalModelRelations = new Dictionary<string, List<ModelRelation>>();
 		DomainClasses = new Dictionary<string, DomainModelWrapper>();
-		Overrides = new Dictionary<string, Dictionary<string, ModelRelation>>();
+		Overrides = new Dictionary<string, EntityOverride>();
 		ProjectTypes = new Dictionary<string, List<CodeClass2>>();
 		Components = new Dictionary<string, Dictionary<string, CodeProperty>>();
 	    EntityProjectItems = new Dictionary<string, EntityProjectItem>();
@@ -1676,7 +1735,7 @@ public class DomainModelWrapper
                     oneRelation.SyntheticIsSetFieldName = "_is" + oneRelation.SyntheticPropertyName + "Set";
 					oneRelation.SyntheticPropertyMaxLength = relation.RelatedModelEntityType.GetIdentifierLength(relation.RelatedModelTypeFullName);
 				    oneRelation.GenerateSyntheticProperty = 
-				        GlobalContainer.VSHelper.GetInheritedProperties(CodeClass)
+				        GlobalContainer.VSHelper.GetProperties(CodeClass, true)
 				            .All(o => o.Name != oneRelation.SyntheticPropertyName); //Check if is already defined
 				}
                 break;
@@ -1685,8 +1744,8 @@ public class DomainModelWrapper
 
     private ModelRelation GetRelation(CodeProperty prop)
 	{
-	    if (GlobalContainer.Overrides.ContainsKey(FullName) && GlobalContainer.Overrides[FullName].ContainsKey(prop.Name))
-	        return GlobalContainer.Overrides[FullName][prop.Name];
+	    if (GlobalContainer.Overrides.ContainsKey(FullName) && GlobalContainer.Overrides[FullName].Relations.ContainsKey(prop.Name))
+	        return GlobalContainer.Overrides[FullName].Relations[prop.Name];
 
 	    var one = !(GlobalContainer.VSHelper.IsEnumerable(prop.Type) && GlobalContainer.VSHelper.IsGeneric(prop.Type));
         var typeFullName = one
@@ -1919,6 +1978,22 @@ public class DomainModelWrapper
 
 #>
 <#+
+
+    public class EntityOverride
+    {
+        public EntityOverride()
+        {
+            Relations = new Dictionary<string, ModelRelation>();
+        }
+
+		public CodeClass2 Class { get; set; }
+
+		public string OverrideType { get; set; }
+
+		public Dictionary<string, ModelRelation> Relations { get; set; }
+		
+		public CodeFunction2 OverrideMethod { get; set; }
+    }
 
     public class EntityType
     {

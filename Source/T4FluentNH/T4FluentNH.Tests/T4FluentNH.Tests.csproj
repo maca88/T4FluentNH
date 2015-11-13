@@ -209,6 +209,9 @@
     <Compile Include="O2MPerson3.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
+    <Compile Include="O2MPerson4.generated.cs">
+      <DependentUpon>T4FluentNH.tt</DependentUpon>
+    </Compile>
     <Compile Include="O2MPersonTests.cs" />
     <Compile Include="O2OIdentityCard2.generated.cs">
       <DependentUpon>T4FluentNH.tt</DependentUpon>
@@ -241,6 +244,7 @@
       <DependentUpon>T4FluentNH.tt</DependentUpon>
     </Compile>
     <Compile Include="O2OPerson5Tests.cs" />
+    <Compile Include="OneToMany\O2MPerson4.cs" />
     <Compile Include="OneToMany\O2MPerson.cs">
       <SubType>Code</SubType>
     </Compile>
