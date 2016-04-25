@@ -14,6 +14,7 @@ using NHibernate.Tool.hbm2ddl;
 using T4FluentNH.Conventions;
 using T4FluentNH.Domain;
 using T4FluentNH.Tests.External;
+using T4FluentNH.Tests.Inheritance;
 
 namespace T4FluentNH.Tests
 {
@@ -39,6 +40,8 @@ namespace T4FluentNH.Tests
                 .Assemblies(new AutomappingConfiguration(), new[] { modelAssembly })
                 .UseOverridesFromAssembly(modelAssembly)
                 .IgnoreBase<Domain.Entity>()
+                .IgnoreBase<Animal>()
+                .IgnoreBase<ExtVersionedEntity>()
                 .Conventions.AddFromAssemblyOf<ReadOnlyAttributeConvention>()
                 .Conventions.Add(PrimaryKey.Name.Is(o => "Id"))
                 .Conventions.Add(ForeignKey.EndsWith("Id"));
@@ -53,11 +56,18 @@ namespace T4FluentNH.Tests
                     m.AutoMappings.ExportTo(mappingsDirecotry);
                     m.FluentMappings.ExportTo(mappingsDirecotry);
                 });
+            try
+            {
+                SessionFactory = fluentConfig.BuildSessionFactory();
+                var schema = new SchemaExport(configuration);
+                schema.Drop(false, true);
+                schema.Create(false, true);
+            }
+            catch (Exception e)
+            {
+                throw;
+            }
             
-            SessionFactory = fluentConfig.BuildSessionFactory();
-            var schema = new SchemaExport(configuration);
-            schema.Drop(false, true);
-            schema.Create(false, true);
         }
 
         public static ISession OpenSession()

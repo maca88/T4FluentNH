@@ -67,6 +67,9 @@
   <GenerateMetadata>
       <Relations>true</Relations>
   </GenerateMetadata>
+  <AsyncMethods>true</AsyncMethods> <!--Works only with NHibernateX-->
+  <TypedMappingExtensions>true</TypedMappingExtensions>
+  <ReadOnlyAttributeConvention>true</ReadOnlyAttributeConvention>
   <NotNullAttribute>T4FluentNH.Tests.NotNullAttribute</NotNullAttribute>
   <LengthAttribute>T4FluentNH.Tests.LengthAttribute</LengthAttribute>
   <DefaultCollectionMapType>Set</DefaultCollectionMapType>

@@ -13,8 +13,8 @@ namespace T4FluentNH.Tests
     {
         public O2OPerson2Tests()
         {
-            Ann = new O2OPerson2 { Name = "Ann" };
-            Rocky = new O2OPerson2 { Name = "Rocky" };
+            Ann = new O2OPerson2 {Name = "Ann"};
+            Rocky = new O2OPerson2 {Name = "Rocky"};
             IdentityCard1 = new O2OIdentityCard2();
             IdentityCard2 = new O2OIdentityCard2();
         }
@@ -93,8 +93,32 @@ namespace T4FluentNH.Tests
                 session.Save(IdentityCard2); //this will cause multiple nulls on a nullable unique column
                 session.Save(Ann);
             }
-            
+
         }
 
+        [TestMethod]
+        public void set_one2one_with_null_should_unset()
+        {
+            Ann.SetIdentityCard(null);
+
+            Ann.SetIdentityCard(IdentityCard2);
+            Assert.AreEqual(IdentityCard2, Ann.IdentityCard);
+            Assert.AreEqual(IdentityCard2.Owner, Ann);
+            Ann.SetIdentityCard(null);
+            Assert.IsNull(Ann.IdentityCard);
+            Assert.IsNull(IdentityCard2.Owner);
+        }
+
+        [TestMethod]
+        public async Task set_one2one_async_with_null_should_unset()
+        {
+            await Ann.SetIdentityCardAsync(null);
+            await Ann.SetIdentityCardAsync(IdentityCard2);
+            Assert.AreEqual(IdentityCard2, Ann.IdentityCard);
+            Assert.AreEqual(IdentityCard2.Owner, Ann);
+            await Ann.SetIdentityCardAsync(null);
+            Assert.IsNull(Ann.IdentityCard);
+            Assert.IsNull(IdentityCard2.Owner);
+        }
     }
 }
